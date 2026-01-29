@@ -282,8 +282,11 @@
                     locateFile: file => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.10.2/${file}`
                 });
 
-                const response = await fetch('music_light.db');
-                if (!response.ok) throw new Error('Failed to fetch database');
+                const dbUrl = new URL('music_light.db', window.location.href).href;
+                console.log('Fetching database from:', dbUrl);
+                const response = await fetch(dbUrl);
+                console.log('Response status:', response.status, response.statusText);
+                if (!response.ok) throw new Error(`HTTP ${response.status}: ${response.statusText}`);
 
                 const buffer = await response.arrayBuffer();
                 db = new SQL.Database(new Uint8Array(buffer));
