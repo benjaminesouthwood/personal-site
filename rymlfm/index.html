@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RYM + Last.fm Explorer</title>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+            color: #333;
+        }
+        h1 {
+            margin-bottom: 5px;
+        }
+        .subtitle {
+            color: #666;
+            margin-bottom: 20px;
+        }
+        .search-container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .search-row {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+        }
+        input[type="text"] {
+            flex: 1;
+            min-width: 200px;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 16px;
+        }
+        input[type="text"]:focus {
+            outline: none;
+            border-color: #007bff;
+        }
+        button {
+            padding: 12px 24px;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        .filters {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+        .filter-group {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .filter-group label {
+            font-size: 14px;
+            color: #666;
+        }
+        select {
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        .stats {
+            background: #e9ecef;
+            padding: 15px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+            font-size: 14px;
+        }
+        .stats span {
+            margin-right: 20px;
+        }
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+        .results {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        .result-count {
+            padding: 15px 20px;
+            background: #f8f9fa;
+            border-bottom: 1px solid #eee;
+            font-size: 14px;
+            color: #666;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th, td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid #eee;
+        }
+        th {
+            background: #f8f9fa;
+            font-weight: 600;
+            cursor: pointer;
+            user-select: none;
+        }
+        th:hover {
+            background: #e9ecef;
+        }
+        th.sorted-asc::after {
+            content: " ▲";
+            font-size: 10px;
+        }
+        th.sorted-desc::after {
+            content: " ▼";
+            font-size: 10px;
+        }
+        tr:hover {
+            background: #f8f9fa;
+        }
+        .rating {
+            font-weight: 600;
+        }
+        .rating-high { color: #28a745; }
+        .rating-med { color: #ffc107; }
+        .rating-low { color: #dc3545; }
+        .plays {
+            color: #666;
+        }
+        .no-data {
+            color: #999;
+            font-style: italic;
+        }
+        .artist {
+            font-weight: 500;
+        }
+        .album {
+            color: #666;
+        }
+        .quick-links {
+            margin-top: 10px;
+        }
+        .quick-links button {
+            padding: 6px 12px;
+            font-size: 12px;
+            margin-right: 5px;
+            margin-bottom: 5px;
+            background: #6c757d;
+        }
+        .quick-links button:hover {
+            background: #545b62;
+        }
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 15px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+        }
+        @media (max-width: 600px) {
+            th, td {
+                padding: 8px 10px;
+                font-size: 14px;
+            }
+            .hide-mobile {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <h1>RYM + Last.fm Explorer</h1>
+    <p class="subtitle">Ben's music ratings (RateYourMusic) joined with listening history (Last.fm)</p>
+
+    <div id="loading" class="loading">
+        <p>Loading database... (12 MB)</p>
+        <p>This may take a moment on first load.</p>
+    </div>
+
+    <div id="app" style="display: none;">
+        <div class="stats" id="stats"></div>
+
+        <div class="search-container">
+            <div class="search-row">
+                <input type="text" id="artist-search" placeholder="Artist name...">
+                <input type="text" id="album-search" placeholder="Album title...">
+                <button id="search-btn">Search</button>
+            </div>
+            <div class="filters">
+                <div class="filter-group">
+                    <label>Min rating:</label>
+                    <select id="min-rating">
+                        <option value="">Any</option>
+                        <option value="9">9+</option>
+                        <option value="8">8+</option>
+                        <option value="7">7+</option>
+                        <option value="6">6+</option>
+                        <option value="5">5+</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label>Min plays:</label>
+                    <select id="min-plays">
+                        <option value="">Any</option>
+                        <option value="100">100+</option>
+                        <option value="50">50+</option>
+                        <option value="20">20+</option>
+                        <option value="10">10+</option>
+                        <option value="1">1+</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label>Show:</label>
+                    <select id="filter-type">
+                        <option value="all">All albums</option>
+                        <option value="both">Rated + Played</option>
+                        <option value="rated">Rated only</option>
+                        <option value="played">Played only</option>
+                    </select>
+                </div>
+            </div>
+            <div class="quick-links">
+                <button onclick="quickSearch('', '', '9', '', 'both')">Top Rated (9+)</button>
+                <button onclick="quickSearch('', '', '', '100', 'all')">Most Played (100+)</button>
+                <button onclick="quickSearch('', '', '8', '50', 'both')">Favorites (8+, 50+ plays)</button>
+                <button onclick="quickSearch('', '', '', '', 'rated')">All Rated</button>
+            </div>
+        </div>
+
+        <div class="results" id="results" style="display: none;">
+            <div class="result-count" id="result-count"></div>
+            <table>
+                <thead>
+                    <tr>
+                        <th data-sort="artist">Artist</th>
+                        <th data-sort="album">Album</th>
+                        <th data-sort="rating">Rating</th>
+                        <th data-sort="play_count">Plays</th>
+                        <th class="hide-mobile" data-sort="release_year">Year</th>
+                    </tr>
+                </thead>
+                <tbody id="results-body"></tbody>
+            </table>
+        </div>
+
+        <div id="error" class="error" style="display: none;"></div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.10.2/sql-wasm.min.js"></script>
+    <script>
+        let db = null;
+        let currentResults = [];
+        let currentSort = { column: 'play_count', direction: 'desc' };
+
+        async function initDB() {
+            try {
+                const SQL = await initSqlJs({
+                    locateFile: file => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.10.2/${file}`
+                });
+
+                const response = await fetch('music_light.db');
+                if (!response.ok) throw new Error('Failed to fetch database');
+
+                const buffer = await response.arrayBuffer();
+                db = new SQL.Database(new Uint8Array(buffer));
+
+                // Get stats
+                const stats = db.exec(`
+                    SELECT
+                        COUNT(*) as total,
+                        SUM(CASE WHEN rating IS NOT NULL THEN 1 ELSE 0 END) as rated,
+                        SUM(CASE WHEN play_count > 0 THEN 1 ELSE 0 END) as played,
+                        SUM(CASE WHEN rating IS NOT NULL AND play_count > 0 THEN 1 ELSE 0 END) as both_count,
+                        SUM(CAST(play_count AS INTEGER)) as total_scrobbles
+                    FROM albums
+                `)[0].values[0];
+
+                document.getElementById('stats').innerHTML = `
+                    <span><strong>${stats[0].toLocaleString()}</strong> albums</span>
+                    <span><strong>${stats[1].toLocaleString()}</strong> rated</span>
+                    <span><strong>${stats[2].toLocaleString()}</strong> played</span>
+                    <span><strong>${stats[4].toLocaleString()}</strong> total scrobbles</span>
+                `;
+
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('app').style.display = 'block';
+
+                // Initial search
+                doSearch();
+            } catch (err) {
+                document.getElementById('loading').innerHTML = `
+                    <p style="color: #dc3545;">Error loading database: ${err.message}</p>
+                    <p>Please refresh the page to try again.</p>
+                `;
+                console.error(err);
+            }
+        }
+
+        function doSearch() {
+            if (!db) return;
+
+            const artist = document.getElementById('artist-search').value.trim();
+            const album = document.getElementById('album-search').value.trim();
+            const minRating = document.getElementById('min-rating').value;
+            const minPlays = document.getElementById('min-plays').value;
+            const filterType = document.getElementById('filter-type').value;
+
+            let conditions = [];
+            let params = [];
+
+            if (artist) {
+                conditions.push("(artist LIKE ? OR artist_norm LIKE ?)");
+                params.push(`%${artist}%`, `%${artist.toLowerCase()}%`);
+            }
+            if (album) {
+                conditions.push("(album LIKE ? OR album_norm LIKE ?)");
+                params.push(`%${album}%`, `%${album.toLowerCase()}%`);
+            }
+            if (minRating) {
+                conditions.push("CAST(rating AS REAL) >= ?");
+                params.push(parseFloat(minRating));
+            }
+            if (minPlays) {
+                conditions.push("CAST(play_count AS INTEGER) >= ?");
+                params.push(parseInt(minPlays));
+            }
+
+            switch (filterType) {
+                case 'both':
+                    conditions.push("rating IS NOT NULL AND CAST(play_count AS INTEGER) > 0");
+                    break;
+                case 'rated':
+                    conditions.push("rating IS NOT NULL");
+                    break;
+                case 'played':
+                    conditions.push("CAST(play_count AS INTEGER) > 0");
+                    break;
+            }
+
+            const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
+            const orderClause = `ORDER BY ${getSortColumn()} ${currentSort.direction.toUpperCase()}`;
+
+            const query = `
+                SELECT artist, album, rating, play_count, release_year, first_listen, last_listen, rym_id
+                FROM albums
+                ${whereClause}
+                ${orderClause}
+                LIMIT 500
+            `;
+
+            try {
+                const stmt = db.prepare(query);
+                params.forEach((p, i) => stmt.bind(i + 1, p));
+
+                currentResults = [];
+                while (stmt.step()) {
+                    const row = stmt.getAsObject();
+                    currentResults.push(row);
+                }
+                stmt.free();
+
+                renderResults();
+            } catch (err) {
+                showError(err.message);
+            }
+        }
+
+        function getSortColumn() {
+            const col = currentSort.column;
+            if (col === 'rating' || col === 'play_count') {
+                return `CAST(${col} AS REAL)`;
+            }
+            return col;
+        }
+
+        function renderResults() {
+            const tbody = document.getElementById('results-body');
+            const countEl = document.getElementById('result-count');
+
+            if (currentResults.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" class="no-data">No results found</td></tr>';
+                countEl.textContent = '0 results';
+            } else {
+                countEl.textContent = `${currentResults.length}${currentResults.length >= 500 ? '+' : ''} results`;
+                tbody.innerHTML = currentResults.map(row => {
+                    const rating = row.rating !== null ? parseFloat(row.rating) : null;
+                    const ratingClass = rating !== null
+                        ? (rating >= 8 ? 'rating-high' : (rating >= 6 ? 'rating-med' : 'rating-low'))
+                        : '';
+
+                    return `
+                        <tr>
+                            <td class="artist">${escapeHtml(row.artist || '')}</td>
+                            <td class="album">${escapeHtml(row.album || '')}</td>
+                            <td class="rating ${ratingClass}">${rating !== null ? rating.toFixed(0) : '<span class="no-data">-</span>'}</td>
+                            <td class="plays">${row.play_count > 0 ? parseInt(row.play_count).toLocaleString() : '<span class="no-data">0</span>'}</td>
+                            <td class="hide-mobile">${row.release_year || '<span class="no-data">-</span>'}</td>
+                        </tr>
+                    `;
+                }).join('');
+            }
+
+            document.getElementById('results').style.display = 'block';
+            updateSortHeaders();
+        }
+
+        function updateSortHeaders() {
+            document.querySelectorAll('th[data-sort]').forEach(th => {
+                th.classList.remove('sorted-asc', 'sorted-desc');
+                if (th.dataset.sort === currentSort.column) {
+                    th.classList.add(currentSort.direction === 'asc' ? 'sorted-asc' : 'sorted-desc');
+                }
+            });
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function showError(msg) {
+            const el = document.getElementById('error');
+            el.textContent = msg;
+            el.style.display = 'block';
+            setTimeout(() => el.style.display = 'none', 5000);
+        }
+
+        function quickSearch(artist, album, minRating, minPlays, filterType) {
+            document.getElementById('artist-search').value = artist;
+            document.getElementById('album-search').value = album;
+            document.getElementById('min-rating').value = minRating;
+            document.getElementById('min-plays').value = minPlays;
+            document.getElementById('filter-type').value = filterType;
+            doSearch();
+        }
+
+        // Event listeners
+        document.addEventListener('DOMContentLoaded', () => {
+            initDB();
+
+            document.getElementById('search-btn').addEventListener('click', doSearch);
+
+            ['artist-search', 'album-search'].forEach(id => {
+                document.getElementById(id).addEventListener('keypress', e => {
+                    if (e.key === 'Enter') doSearch();
+                });
+            });
+
+            ['min-rating', 'min-plays', 'filter-type'].forEach(id => {
+                document.getElementById(id).addEventListener('change', doSearch);
+            });
+
+            document.querySelectorAll('th[data-sort]').forEach(th => {
+                th.addEventListener('click', () => {
+                    const col = th.dataset.sort;
+                    if (currentSort.column === col) {
+                        currentSort.direction = currentSort.direction === 'asc' ? 'desc' : 'asc';
+                    } else {
+                        currentSort.column = col;
+                        currentSort.direction = col === 'rating' || col === 'play_count' ? 'desc' : 'asc';
+                    }
+                    doSearch();
+                });
+            });
+        });
+    </script>
+</body>
+</html>
