@@ -197,7 +197,7 @@
     <p class="subtitle">Ben's music ratings (RateYourMusic) joined with listening history (Last.fm)</p>
 
     <div id="loading" class="loading">
-        <p>Loading database... (12 MB)</p>
+        <p>Loading database... (14 MB)</p>
         <p>This may take a moment on first load.</p>
     </div>
 
@@ -292,18 +292,18 @@
                 const stats = db.exec(`
                     SELECT
                         COUNT(*) as total,
-                        SUM(CASE WHEN rating IS NOT NULL THEN 1 ELSE 0 END) as rated,
-                        SUM(CASE WHEN play_count > 0 THEN 1 ELSE 0 END) as played,
-                        SUM(CASE WHEN rating IS NOT NULL AND play_count > 0 THEN 1 ELSE 0 END) as both_count,
+                        SUM(CASE WHEN rating IS NOT NULL AND rating != '' THEN 1 ELSE 0 END) as rated,
+                        SUM(CASE WHEN CAST(play_count AS INTEGER) > 0 THEN 1 ELSE 0 END) as played,
+                        SUM(CASE WHEN rating IS NOT NULL AND rating != '' AND CAST(play_count AS INTEGER) > 0 THEN 1 ELSE 0 END) as both_count,
                         SUM(CAST(play_count AS INTEGER)) as total_scrobbles
                     FROM albums
                 `)[0].values[0];
 
                 document.getElementById('stats').innerHTML = `
-                    <span><strong>${stats[0].toLocaleString()}</strong> albums</span>
-                    <span><strong>${stats[1].toLocaleString()}</strong> rated</span>
-                    <span><strong>${stats[2].toLocaleString()}</strong> played</span>
-                    <span><strong>${stats[4].toLocaleString()}</strong> total scrobbles</span>
+                    <span><strong>${Number(stats[0]).toLocaleString()}</strong> albums</span>
+                    <span><strong>${Number(stats[1]).toLocaleString()}</strong> rated</span>
+                    <span><strong>${Number(stats[2]).toLocaleString()}</strong> played</span>
+                    <span><strong>${Number(stats[4]).toLocaleString()}</strong> total scrobbles</span>
                 `;
 
                 document.getElementById('loading').style.display = 'none';
@@ -320,6 +320,12 @@
             }
         }
 
+        function escapeSql(str) {
+            // Escape single quotes for SQL
+            if (!str) return '';
+            return str.replace(/'/g, "''");
+        }
+
         function doSearch() {
             if (!db) return;
 
@@ -330,31 +336,28 @@
             const filterType = document.getElementById('filter-type').value;
 
             let conditions = [];
-            let params = [];
 
             if (artist) {
-                conditions.push("(artist LIKE ? OR artist_norm LIKE ?)");
-                params.push(`%${artist}%`, `%${artist.toLowerCase()}%`);
+                const escaped = escapeSql(artist.toLowerCase());
+                conditions.push(`(LOWER(artist) LIKE '%${escaped}%' OR artist_norm LIKE '%${escaped}%' OR artist_canonical LIKE '%${escaped}%')`);
             }
             if (album) {
-                conditions.push("(album LIKE ? OR album_norm LIKE ?)");
-                params.push(`%${album}%`, `%${album.toLowerCase()}%`);
+                const escaped = escapeSql(album.toLowerCase());
+                conditions.push(`(LOWER(album) LIKE '%${escaped}%' OR album_norm LIKE '%${escaped}%')`);
             }
             if (minRating) {
-                conditions.push("CAST(rating AS REAL) >= ?");
-                params.push(parseFloat(minRating));
+                conditions.push(`CAST(rating AS REAL) >= ${parseFloat(minRating)}`);
             }
             if (minPlays) {
-                conditions.push("CAST(play_count AS INTEGER) >= ?");
-                params.push(parseInt(minPlays));
+                conditions.push(`CAST(play_count AS INTEGER) >= ${parseInt(minPlays)}`);
             }
 
             switch (filterType) {
                 case 'both':
-                    conditions.push("rating IS NOT NULL AND CAST(play_count AS INTEGER) > 0");
+                    conditions.push("rating IS NOT NULL AND rating != '' AND CAST(play_count AS INTEGER) > 0");
                     break;
                 case 'rated':
-                    conditions.push("rating IS NOT NULL");
+                    conditions.push("rating IS NOT NULL AND rating != ''");
                     break;
                 case 'played':
                     conditions.push("CAST(play_count AS INTEGER) > 0");
@@ -362,7 +365,12 @@
             }
 
             const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
-            const orderClause = `ORDER BY ${getSortColumn()} ${currentSort.direction.toUpperCase()}`;
+
+            let orderCol = currentSort.column;
+            if (orderCol === 'rating' || orderCol === 'play_count') {
+                orderCol = `CAST(${orderCol} AS REAL)`;
+            }
+            const orderClause = `ORDER BY ${orderCol} ${currentSort.direction.toUpperCase()} NULLS LAST`;
 
             const query = `
                 SELECT artist, album, rating, play_count, release_year, first_listen, last_listen, rym_id
@@ -373,28 +381,24 @@
             `;
 
             try {
-                const stmt = db.prepare(query);
-                params.forEach((p, i) => stmt.bind(i + 1, p));
+                console.log('Query:', query);
+                const results = db.exec(query);
 
                 currentResults = [];
-                while (stmt.step()) {
-                    const row = stmt.getAsObject();
-                    currentResults.push(row);
+                if (results.length > 0) {
+                    const columns = results[0].columns;
+                    results[0].values.forEach(row => {
+                        const obj = {};
+                        columns.forEach((col, i) => obj[col] = row[i]);
+                        currentResults.push(obj);
+                    });
                 }
-                stmt.free();
 
                 renderResults();
             } catch (err) {
+                console.error('Query error:', err);
                 showError(err.message);
             }
-        }
-
-        function getSortColumn() {
-            const col = currentSort.column;
-            if (col === 'rating' || col === 'play_count') {
-                return `CAST(${col} AS REAL)`;
-            }
-            return col;
         }
 
         function renderResults() {
@@ -407,17 +411,18 @@
             } else {
                 countEl.textContent = `${currentResults.length}${currentResults.length >= 500 ? '+' : ''} results`;
                 tbody.innerHTML = currentResults.map(row => {
-                    const rating = row.rating !== null ? parseFloat(row.rating) : null;
+                    const rating = row.rating !== null && row.rating !== '' ? parseFloat(row.rating) : null;
                     const ratingClass = rating !== null
                         ? (rating >= 8 ? 'rating-high' : (rating >= 6 ? 'rating-med' : 'rating-low'))
                         : '';
+                    const playCount = parseInt(row.play_count) || 0;
 
                     return `
                         <tr>
                             <td class="artist">${escapeHtml(row.artist || '')}</td>
                             <td class="album">${escapeHtml(row.album || '')}</td>
                             <td class="rating ${ratingClass}">${rating !== null ? rating.toFixed(0) : '<span class="no-data">-</span>'}</td>
-                            <td class="plays">${row.play_count > 0 ? parseInt(row.play_count).toLocaleString() : '<span class="no-data">0</span>'}</td>
+                            <td class="plays">${playCount > 0 ? playCount.toLocaleString() : '<span class="no-data">0</span>'}</td>
                             <td class="hide-mobile">${row.release_year || '<span class="no-data">-</span>'}</td>
                         </tr>
                     `;
