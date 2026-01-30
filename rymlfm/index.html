@@ -197,7 +197,7 @@
     <p class="subtitle">Ben's music ratings (RateYourMusic) joined with listening history (Last.fm)</p>
 
     <div id="loading" class="loading">
-        <p>Loading database... (14 MB)</p>
+        <p>Loading database... (15 MB)</p>
         <p>This may take a moment on first load.</p>
     </div>
 
@@ -240,6 +240,18 @@
                         <option value="both">Rated + Played</option>
                         <option value="rated">Rated only</option>
                         <option value="played">Played only</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label>Type:</label>
+                    <select id="release-type">
+                        <option value="">All types</option>
+                        <option value="Album">Albums</option>
+                        <option value="EP">EPs</option>
+                        <option value="Single">Singles</option>
+                        <option value="Compilation">Compilations</option>
+                        <option value="Mixtape">Mixtapes</option>
+                        <option value="Live">Live</option>
                     </select>
                 </div>
             </div>
@@ -334,6 +346,7 @@
             const minRating = document.getElementById('min-rating').value;
             const minPlays = document.getElementById('min-plays').value;
             const filterType = document.getElementById('filter-type').value;
+            const releaseType = document.getElementById('release-type').value;
 
             let conditions = [];
 
@@ -350,6 +363,9 @@
             }
             if (minPlays) {
                 conditions.push(`CAST(play_count AS INTEGER) >= ${parseInt(minPlays)}`);
+            }
+            if (releaseType) {
+                conditions.push(`release_type = '${escapeSql(releaseType)}'`);
             }
 
             switch (filterType) {
@@ -373,7 +389,7 @@
             const orderClause = `ORDER BY ${orderCol} ${currentSort.direction.toUpperCase()} NULLS LAST`;
 
             const query = `
-                SELECT artist, album, rating, play_count, release_year, first_listen, last_listen, rym_id
+                SELECT artist, album, rating, play_count, release_year, release_type, first_listen, last_listen, rym_id
                 FROM albums
                 ${whereClause}
                 ${orderClause}
@@ -416,6 +432,7 @@
                         ? (rating >= 8 ? 'rating-high' : (rating >= 6 ? 'rating-med' : 'rating-low'))
                         : '';
                     const playCount = parseInt(row.play_count) || 0;
+                    const year = row.release_year ? parseInt(row.release_year) : null;
 
                     return `
                         <tr>
@@ -423,7 +440,7 @@
                             <td class="album">${escapeHtml(row.album || '')}</td>
                             <td class="rating ${ratingClass}">${rating !== null ? rating.toFixed(0) : '<span class="no-data">-</span>'}</td>
                             <td class="plays">${playCount > 0 ? playCount.toLocaleString() : '<span class="no-data">0</span>'}</td>
-                            <td class="hide-mobile">${row.release_year || '<span class="no-data">-</span>'}</td>
+                            <td class="hide-mobile">${year || '<span class="no-data">-</span>'}</td>
                         </tr>
                     `;
                 }).join('');
@@ -455,12 +472,13 @@
             setTimeout(() => el.style.display = 'none', 5000);
         }
 
-        function quickSearch(artist, album, minRating, minPlays, filterType) {
+        function quickSearch(artist, album, minRating, minPlays, filterType, releaseType = '') {
             document.getElementById('artist-search').value = artist;
             document.getElementById('album-search').value = album;
             document.getElementById('min-rating').value = minRating;
             document.getElementById('min-plays').value = minPlays;
             document.getElementById('filter-type').value = filterType;
+            document.getElementById('release-type').value = releaseType;
             doSearch();
         }
 
@@ -476,7 +494,7 @@
                 });
             });
 
-            ['min-rating', 'min-plays', 'filter-type'].forEach(id => {
+            ['min-rating', 'min-plays', 'filter-type', 'release-type'].forEach(id => {
                 document.getElementById(id).addEventListener('change', doSearch);
             });
 
