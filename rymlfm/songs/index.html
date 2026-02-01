@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RYM + Last.fm Explorer</title>
+    <title>Songs - RYM + Last.fm Explorer</title>
     <style>
         * {
             box-sizing: border-box;
@@ -146,24 +146,19 @@
             background: #e9ecef;
         }
         th.sorted-asc::after {
-            content: " ▲";
+            content: " \25B2";
             font-size: 10px;
         }
         th.sorted-desc::after {
-            content: " ▼";
+            content: " \25BC";
             font-size: 10px;
         }
         tr:hover {
             background: #f8f9fa;
         }
-        .rating {
-            font-weight: 600;
-        }
-        .rating-high { color: #28a745; }
-        .rating-med { color: #ffc107; }
-        .rating-low { color: #dc3545; }
         .plays {
-            color: #666;
+            font-weight: 600;
+            color: #28a745;
         }
         .no-data {
             color: #999;
@@ -172,8 +167,12 @@
         .artist {
             font-weight: 500;
         }
-        .album {
+        .track {
+            color: #333;
+        }
+        .date {
             color: #666;
+            font-size: 13px;
         }
         .quick-links {
             margin-top: 10px;
@@ -207,12 +206,12 @@
     </style>
 </head>
 <body>
-    <h1>RYM + Last.fm Explorer</h1>
-    <p class="subtitle">Ben's music ratings (RateYourMusic) joined with listening history (Last.fm)</p>
+    <h1>Songs - Last.fm Plays</h1>
+    <p class="subtitle">Ben's listening history from Last.fm - track by track</p>
 
     <div class="nav">
-        <a href="/rymlfm/" class="active">Albums</a>
-        <a href="/rymlfm/songs/">Songs</a>
+        <a href="/rymlfm/">Albums</a>
+        <a href="/rymlfm/songs/" class="active">Songs</a>
     </div>
 
     <div id="loading" class="loading">
@@ -226,21 +225,10 @@
         <div class="search-container">
             <div class="search-row">
                 <input type="text" id="artist-search" placeholder="Artist name...">
-                <input type="text" id="album-search" placeholder="Album title...">
+                <input type="text" id="track-search" placeholder="Track title...">
                 <button id="search-btn">Search</button>
             </div>
             <div class="filters">
-                <div class="filter-group">
-                    <label>Min rating:</label>
-                    <select id="min-rating">
-                        <option value="">Any</option>
-                        <option value="9">9+</option>
-                        <option value="8">8+</option>
-                        <option value="7">7+</option>
-                        <option value="6">6+</option>
-                        <option value="5">5+</option>
-                    </select>
-                </div>
                 <div class="filter-group">
                     <label>Min plays:</label>
                     <select id="min-plays">
@@ -249,36 +237,15 @@
                         <option value="50">50+</option>
                         <option value="20">20+</option>
                         <option value="10">10+</option>
-                        <option value="1">1+</option>
-                    </select>
-                </div>
-                <div class="filter-group">
-                    <label>Show:</label>
-                    <select id="filter-type">
-                        <option value="all">All albums</option>
-                        <option value="both">Rated + Played</option>
-                        <option value="rated">Rated only</option>
-                        <option value="played">Played only</option>
-                    </select>
-                </div>
-                <div class="filter-group">
-                    <label>Type:</label>
-                    <select id="release-type">
-                        <option value="">All types</option>
-                        <option value="Album">Albums</option>
-                        <option value="EP">EPs</option>
-                        <option value="Single">Singles</option>
-                        <option value="Compilation">Compilations</option>
-                        <option value="Mixtape">Mixtapes</option>
-                        <option value="Live">Live</option>
+                        <option value="5">5+</option>
                     </select>
                 </div>
             </div>
             <div class="quick-links">
-                <button onclick="quickSearch('', '', '9', '', 'both')">Top Rated (9+)</button>
-                <button onclick="quickSearch('', '', '', '100', 'all')">Most Played (100+)</button>
-                <button onclick="quickSearch('', '', '8', '50', 'both')">Favorites (8+, 50+ plays)</button>
-                <button onclick="quickSearch('', '', '', '', 'rated')">All Rated</button>
+                <button onclick="quickSearch('', '', '100')">Most Played (100+)</button>
+                <button onclick="quickSearch('', '', '50')">50+ Plays</button>
+                <button onclick="quickSearch('', '', '20')">20+ Plays</button>
+                <button onclick="quickSearch('', '', '')">All Tracks</button>
             </div>
         </div>
 
@@ -288,10 +255,10 @@
                 <thead>
                     <tr>
                         <th data-sort="artist">Artist</th>
-                        <th data-sort="album">Album</th>
-                        <th data-sort="rating">Rating</th>
+                        <th data-sort="track">Track</th>
                         <th data-sort="play_count">Plays</th>
-                        <th class="hide-mobile" data-sort="release_year">Year</th>
+                        <th class="hide-mobile" data-sort="first_listen">First</th>
+                        <th class="hide-mobile" data-sort="last_listen">Last</th>
                     </tr>
                 </thead>
                 <tbody id="results-body"></tbody>
@@ -323,18 +290,13 @@
                 const stats = db.exec(`
                     SELECT
                         COUNT(*) as total,
-                        SUM(CASE WHEN rating IS NOT NULL AND rating != '' THEN 1 ELSE 0 END) as rated,
-                        SUM(CASE WHEN CAST(play_count AS INTEGER) > 0 THEN 1 ELSE 0 END) as played,
-                        SUM(CASE WHEN rating IS NOT NULL AND rating != '' AND CAST(play_count AS INTEGER) > 0 THEN 1 ELSE 0 END) as both_count,
-                        SUM(CAST(play_count AS INTEGER)) as total_scrobbles
-                    FROM albums
+                        SUM(CAST(play_count AS INTEGER)) as total_plays
+                    FROM tracks
                 `)[0].values[0];
 
                 document.getElementById('stats').innerHTML = `
-                    <span><strong>${Number(stats[0]).toLocaleString()}</strong> albums</span>
-                    <span><strong>${Number(stats[1]).toLocaleString()}</strong> rated</span>
-                    <span><strong>${Number(stats[2]).toLocaleString()}</strong> played</span>
-                    <span><strong>${Number(stats[4]).toLocaleString()}</strong> total scrobbles</span>
+                    <span><strong>${Number(stats[0]).toLocaleString()}</strong> unique tracks</span>
+                    <span><strong>${Number(stats[1]).toLocaleString()}</strong> total scrobbles</span>
                 `;
 
                 document.getElementById('loading').style.display = 'none';
@@ -352,7 +314,6 @@
         }
 
         function escapeSql(str) {
-            // Escape single quotes for SQL
             if (!str) return '';
             return str.replace(/'/g, "''");
         }
@@ -361,55 +322,34 @@
             if (!db) return;
 
             const artist = document.getElementById('artist-search').value.trim();
-            const album = document.getElementById('album-search').value.trim();
-            const minRating = document.getElementById('min-rating').value;
+            const track = document.getElementById('track-search').value.trim();
             const minPlays = document.getElementById('min-plays').value;
-            const filterType = document.getElementById('filter-type').value;
-            const releaseType = document.getElementById('release-type').value;
 
             let conditions = [];
 
             if (artist) {
                 const escaped = escapeSql(artist.toLowerCase());
-                conditions.push(`(LOWER(artist) LIKE '%${escaped}%' OR artist_norm LIKE '%${escaped}%' OR artist_canonical LIKE '%${escaped}%')`);
+                conditions.push(`(LOWER(artist) LIKE '%${escaped}%' OR artist_canonical LIKE '%${escaped}%')`);
             }
-            if (album) {
-                const escaped = escapeSql(album.toLowerCase());
-                conditions.push(`(LOWER(album) LIKE '%${escaped}%' OR album_norm LIKE '%${escaped}%')`);
-            }
-            if (minRating) {
-                conditions.push(`CAST(rating AS REAL) >= ${parseFloat(minRating)}`);
+            if (track) {
+                const escaped = escapeSql(track.toLowerCase());
+                conditions.push(`(LOWER(track) LIKE '%${escaped}%' OR track_norm LIKE '%${escaped}%')`);
             }
             if (minPlays) {
                 conditions.push(`CAST(play_count AS INTEGER) >= ${parseInt(minPlays)}`);
-            }
-            if (releaseType) {
-                conditions.push(`release_type = '${escapeSql(releaseType)}'`);
-            }
-
-            switch (filterType) {
-                case 'both':
-                    conditions.push("rating IS NOT NULL AND rating != '' AND CAST(play_count AS INTEGER) > 0");
-                    break;
-                case 'rated':
-                    conditions.push("rating IS NOT NULL AND rating != ''");
-                    break;
-                case 'played':
-                    conditions.push("CAST(play_count AS INTEGER) > 0");
-                    break;
             }
 
             const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
 
             let orderCol = currentSort.column;
-            if (orderCol === 'rating' || orderCol === 'play_count') {
-                orderCol = `CAST(${orderCol} AS REAL)`;
+            if (orderCol === 'play_count') {
+                orderCol = `CAST(play_count AS INTEGER)`;
             }
             const orderClause = `ORDER BY ${orderCol} ${currentSort.direction.toUpperCase()} NULLS LAST`;
 
             const query = `
-                SELECT artist, album, rating, play_count, release_year, release_type, first_listen, last_listen, rym_id
-                FROM albums
+                SELECT artist, track, play_count, first_listen, last_listen
+                FROM tracks
                 ${whereClause}
                 ${orderClause}
                 LIMIT 500
@@ -436,6 +376,16 @@
             }
         }
 
+        function formatDate(dateStr) {
+            if (!dateStr) return '';
+            try {
+                const d = new Date(dateStr);
+                return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+            } catch {
+                return dateStr;
+            }
+        }
+
         function renderResults() {
             const tbody = document.getElementById('results-body');
             const countEl = document.getElementById('result-count');
@@ -446,20 +396,15 @@
             } else {
                 countEl.textContent = `${currentResults.length}${currentResults.length >= 500 ? '+' : ''} results`;
                 tbody.innerHTML = currentResults.map(row => {
-                    const rating = row.rating !== null && row.rating !== '' ? parseFloat(row.rating) : null;
-                    const ratingClass = rating !== null
-                        ? (rating >= 8 ? 'rating-high' : (rating >= 6 ? 'rating-med' : 'rating-low'))
-                        : '';
                     const playCount = parseInt(row.play_count) || 0;
-                    const year = row.release_year ? parseInt(row.release_year) : null;
 
                     return `
                         <tr>
                             <td class="artist">${escapeHtml(row.artist || '')}</td>
-                            <td class="album">${escapeHtml(row.album || '')}</td>
-                            <td class="rating ${ratingClass}">${rating !== null ? rating.toFixed(0) : '<span class="no-data">-</span>'}</td>
-                            <td class="plays">${playCount > 0 ? playCount.toLocaleString() : '<span class="no-data">0</span>'}</td>
-                            <td class="hide-mobile">${year || '<span class="no-data">-</span>'}</td>
+                            <td class="track">${escapeHtml(row.track || '')}</td>
+                            <td class="plays">${playCount.toLocaleString()}</td>
+                            <td class="hide-mobile date">${formatDate(row.first_listen)}</td>
+                            <td class="hide-mobile date">${formatDate(row.last_listen)}</td>
                         </tr>
                     `;
                 }).join('');
@@ -491,13 +436,10 @@
             setTimeout(() => el.style.display = 'none', 5000);
         }
 
-        function quickSearch(artist, album, minRating, minPlays, filterType, releaseType = '') {
+        function quickSearch(artist, track, minPlays) {
             document.getElementById('artist-search').value = artist;
-            document.getElementById('album-search').value = album;
-            document.getElementById('min-rating').value = minRating;
+            document.getElementById('track-search').value = track;
             document.getElementById('min-plays').value = minPlays;
-            document.getElementById('filter-type').value = filterType;
-            document.getElementById('release-type').value = releaseType;
             doSearch();
         }
 
@@ -507,13 +449,13 @@
 
             document.getElementById('search-btn').addEventListener('click', doSearch);
 
-            ['artist-search', 'album-search'].forEach(id => {
+            ['artist-search', 'track-search'].forEach(id => {
                 document.getElementById(id).addEventListener('keypress', e => {
                     if (e.key === 'Enter') doSearch();
                 });
             });
 
-            ['min-rating', 'min-plays', 'filter-type', 'release-type'].forEach(id => {
+            ['min-plays'].forEach(id => {
                 document.getElementById(id).addEventListener('change', doSearch);
             });
 
@@ -524,7 +466,7 @@
                         currentSort.direction = currentSort.direction === 'asc' ? 'desc' : 'asc';
                     } else {
                         currentSort.column = col;
-                        currentSort.direction = col === 'rating' || col === 'play_count' ? 'desc' : 'asc';
+                        currentSort.direction = col === 'play_count' ? 'desc' : 'asc';
                     }
                     doSearch();
                 });
