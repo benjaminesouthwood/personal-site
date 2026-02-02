@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Music League - RYM + Last.fm Explorer</title>
+    <style>
+        * { box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+            color: #333;
+        }
+        h1 { margin-bottom: 5px; }
+        h2 { margin-top: 30px; margin-bottom: 15px; color: #444; }
+        .subtitle { color: #666; margin-bottom: 20px; }
+        .nav { margin-bottom: 20px; }
+        .nav a { color: #007bff; text-decoration: none; margin-right: 15px; }
+        .nav a:hover { text-decoration: underline; }
+        .nav a.active { font-weight: bold; }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        .stat-card {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+        .stat-card .value { font-size: 24px; font-weight: bold; color: #007bff; }
+        .stat-card .label { font-size: 12px; color: #666; margin-top: 5px; }
+
+        .search-container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .search-row {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+        }
+        input[type="text"] {
+            flex: 1;
+            min-width: 200px;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 16px;
+        }
+        input[type="text"]:focus { outline: none; border-color: #007bff; }
+        button {
+            padding: 12px 24px;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+        button:hover { background: #0056b3; }
+        .filters {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+        .filter-group {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .filter-group label { font-size: 14px; color: #666; }
+        select {
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        .quick-links { margin-top: 10px; }
+        .quick-links button {
+            padding: 6px 12px;
+            font-size: 12px;
+            margin-right: 5px;
+            margin-bottom: 5px;
+            background: #6c757d;
+        }
+        .quick-links button:hover { background: #545b62; }
+
+        .loading { text-align: center; padding: 40px; color: #666; }
+        .results {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            overflow: hidden;
+            margin-bottom: 30px;
+        }
+        .result-count {
+            padding: 15px 20px;
+            background: #f8f9fa;
+            border-bottom: 1px solid #eee;
+            font-size: 14px;
+            color: #666;
+        }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { padding: 10px 12px; text-align: left; border-bottom: 1px solid #eee; }
+        th {
+            background: #f8f9fa;
+            font-weight: 600;
+            cursor: pointer;
+            user-select: none;
+            font-size: 13px;
+        }
+        th:hover { background: #e9ecef; }
+        th.sorted-asc::after { content: " \25B2"; font-size: 10px; }
+        th.sorted-desc::after { content: " \25BC"; font-size: 10px; }
+        tr:hover { background: #f8f9fa; }
+
+        .placement-1 { color: #ffd700; font-weight: bold; }
+        .placement-2 { color: #c0c0c0; font-weight: bold; }
+        .placement-3 { color: #cd7f32; font-weight: bold; }
+        .z-positive { color: #28a745; }
+        .z-negative { color: #dc3545; }
+        .no-data { color: #999; font-style: italic; }
+
+        .leaderboard {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        .leaderboard th, .leaderboard td { text-align: center; }
+        .leaderboard td:first-child { text-align: left; font-weight: 500; }
+
+        @media (max-width: 800px) {
+            th, td { padding: 8px 6px; font-size: 13px; }
+            .hide-mobile { display: none; }
+        }
+    </style>
+</head>
+<body>
+    <h1>Music League Stats</h1>
+    <p class="subtitle">Submission scores, rankings, and correlations with listening history</p>
+
+    <div class="nav">
+        <a href="/rymlfm/">Albums</a>
+        <a href="/rymlfm/songs/">Songs</a>
+        <a href="/rymlfm/musicleague/" class="active">Music League</a>
+    </div>
+
+    <div id="loading" class="loading">
+        <p>Loading database...</p>
+    </div>
+
+    <div id="app" style="display: none;">
+        <div class="stats-grid" id="stats-grid"></div>
+
+        <h2>Leaderboard</h2>
+        <div class="leaderboard" id="leaderboard"></div>
+
+        <h2>Submissions</h2>
+        <div class="search-container">
+            <div class="search-row">
+                <input type="text" id="artist-search" placeholder="Artist...">
+                <input type="text" id="track-search" placeholder="Track...">
+                <button id="search-btn">Search</button>
+            </div>
+            <div class="filters">
+                <div class="filter-group">
+                    <label>Submitter:</label>
+                    <select id="submitter-filter"></select>
+                </div>
+                <div class="filter-group">
+                    <label>Show:</label>
+                    <select id="result-filter">
+                        <option value="all">All</option>
+                        <option value="winners">Winners only</option>
+                        <option value="podiums">Podiums only</option>
+                        <option value="with-plays">With Last.fm plays</option>
+                        <option value="with-rating">With RYM rating</option>
+                    </select>
+                </div>
+            </div>
+            <div class="quick-links">
+                <button onclick="quickFilter('winners')">Winners</button>
+                <button onclick="quickFilter('podiums')">Podiums</button>
+                <button onclick="quickFilter('best-z')">Best Z-Scores</button>
+                <button onclick="quickFilter('worst-z')">Worst Z-Scores</button>
+                <button onclick="quickFilter('all')">All</button>
+            </div>
+        </div>
+
+        <div class="results" id="results" style="display: none;">
+            <div class="result-count" id="result-count"></div>
+            <table>
+                <thead>
+                    <tr>
+                        <th data-sort="artists">Artist</th>
+                        <th data-sort="title">Track</th>
+                        <th data-sort="submitter_name">Submitter</th>
+                        <th data-sort="placement">Place</th>
+                        <th data-sort="raw_score">Pts</th>
+                        <th data-sort="z_score">Z</th>
+                        <th class="hide-mobile" data-sort="lastfm_plays">Plays</th>
+                        <th class="hide-mobile" data-sort="rym_rating">Rating</th>
+                        <th class="hide-mobile" data-sort="round_name">Round</th>
+                    </tr>
+                </thead>
+                <tbody id="results-body"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.10.2/sql-wasm.min.js"></script>
+    <script>
+        let db = null;
+        let currentResults = [];
+        let currentSort = { column: 'z_score', direction: 'desc' };
+        let submitters = [];
+
+        async function initDB() {
+            try {
+                const SQL = await initSqlJs({
+                    locateFile: file => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.10.2/${file}`
+                });
+
+                const response = await fetch('/rymlfm/musicleague_processed.db');
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+                const buffer = await response.arrayBuffer();
+                db = new SQL.Database(new Uint8Array(buffer));
+
+                // Get overall stats
+                const stats = db.exec(`
+                    SELECT
+                        (SELECT COUNT(*) FROM submission_scores) as total_subs,
+                        (SELECT COUNT(*) FROM submission_scores WHERE is_winner = 1) as total_rounds,
+                        (SELECT COUNT(DISTINCT submitter_id) FROM submission_scores) as total_submitters,
+                        (SELECT SUM(lastfm_plays) FROM submission_scores WHERE lastfm_plays IS NOT NULL) as total_plays
+                `)[0].values[0];
+
+                document.getElementById('stats-grid').innerHTML = `
+                    <div class="stat-card"><div class="value">${stats[0]}</div><div class="label">Submissions</div></div>
+                    <div class="stat-card"><div class="value">${stats[1]}</div><div class="label">Rounds</div></div>
+                    <div class="stat-card"><div class="value">${stats[2]}</div><div class="label">Submitters</div></div>
+                    <div class="stat-card"><div class="value">${Number(stats[3]).toLocaleString()}</div><div class="label">Total Last.fm Plays</div></div>
+                `;
+
+                // Get submitters for filter
+                submitters = db.exec(`SELECT submitter_id, submitter_name FROM submitter_stats ORDER BY submitter_name`)[0].values;
+                const submitterSelect = document.getElementById('submitter-filter');
+                submitterSelect.innerHTML = '<option value="">All</option>' +
+                    submitters.map(s => `<option value="${s[0]}">${s[1]}</option>`).join('');
+
+                // Render leaderboard
+                renderLeaderboard();
+
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('app').style.display = 'block';
+
+                doSearch();
+            } catch (err) {
+                document.getElementById('loading').innerHTML = `
+                    <p style="color: #dc3545;">Error: ${err.message}</p>
+                `;
+                console.error(err);
+            }
+        }
+
+        function renderLeaderboard() {
+            const leaders = db.exec(`
+                SELECT submitter_name, total_submissions, total_wins, win_rate,
+                       total_podiums, podium_rate, avg_z_score, avg_placement
+                FROM submitter_stats
+                ORDER BY avg_z_score DESC
+            `)[0];
+
+            const html = `
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Subs</th>
+                            <th>Wins</th>
+                            <th>Win%</th>
+                            <th>Podiums</th>
+                            <th>Pod%</th>
+                            <th>Avg Z</th>
+                            <th class="hide-mobile">Avg Place</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${leaders.values.map(l => `
+                            <tr>
+                                <td>${l[0]}</td>
+                                <td>${l[1]}</td>
+                                <td>${l[2]}</td>
+                                <td>${l[3]}%</td>
+                                <td>${l[4]}</td>
+                                <td>${l[5]}%</td>
+                                <td class="${l[6] >= 0 ? 'z-positive' : 'z-negative'}">${l[6] >= 0 ? '+' : ''}${l[6].toFixed(2)}</td>
+                                <td class="hide-mobile">${l[7].toFixed(1)}</td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            `;
+            document.getElementById('leaderboard').innerHTML = html;
+        }
+
+        function escapeSql(str) {
+            if (!str) return '';
+            return str.replace(/'/g, "''");
+        }
+
+        function doSearch() {
+            if (!db) return;
+
+            const artist = document.getElementById('artist-search').value.trim();
+            const track = document.getElementById('track-search').value.trim();
+            const submitter = document.getElementById('submitter-filter').value;
+            const resultFilter = document.getElementById('result-filter').value;
+
+            let conditions = [];
+
+            if (artist) {
+                conditions.push(`LOWER(artists) LIKE '%${escapeSql(artist.toLowerCase())}%'`);
+            }
+            if (track) {
+                conditions.push(`LOWER(title) LIKE '%${escapeSql(track.toLowerCase())}%'`);
+            }
+            if (submitter) {
+                conditions.push(`submitter_id = '${escapeSql(submitter)}'`);
+            }
+
+            switch (resultFilter) {
+                case 'winners': conditions.push('is_winner = 1'); break;
+                case 'podiums': conditions.push('is_podium = 1'); break;
+                case 'with-plays': conditions.push('lastfm_plays IS NOT NULL'); break;
+                case 'with-rating': conditions.push('rym_rating IS NOT NULL'); break;
+            }
+
+            const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
+
+            let orderCol = currentSort.column;
+            if (['z_score', 'raw_score', 'placement', 'lastfm_plays', 'rym_rating'].includes(orderCol)) {
+                orderCol = `CAST(${orderCol} AS REAL)`;
+            }
+            const orderClause = `ORDER BY ${orderCol} ${currentSort.direction.toUpperCase()} NULLS LAST`;
+
+            const query = `
+                SELECT artists, title, submitter_name, placement, raw_score, z_score,
+                       lastfm_plays, rym_rating, round_name
+                FROM submission_scores
+                ${whereClause}
+                ${orderClause}
+                LIMIT 500
+            `;
+
+            try {
+                const results = db.exec(query);
+                currentResults = [];
+                if (results.length > 0) {
+                    const columns = results[0].columns;
+                    results[0].values.forEach(row => {
+                        const obj = {};
+                        columns.forEach((col, i) => obj[col] = row[i]);
+                        currentResults.push(obj);
+                    });
+                }
+                renderResults();
+            } catch (err) {
+                console.error('Query error:', err);
+            }
+        }
+
+        function renderResults() {
+            const tbody = document.getElementById('results-body');
+            const countEl = document.getElementById('result-count');
+
+            if (currentResults.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="9" class="no-data">No results</td></tr>';
+                countEl.textContent = '0 results';
+            } else {
+                countEl.textContent = `${currentResults.length}${currentResults.length >= 500 ? '+' : ''} results`;
+                tbody.innerHTML = currentResults.map(row => {
+                    const placeClass = row.placement <= 3 ? `placement-${row.placement}` : '';
+                    const zClass = row.z_score >= 0 ? 'z-positive' : 'z-negative';
+                    const plays = row.lastfm_plays ? row.lastfm_plays.toLocaleString() : '<span class="no-data">-</span>';
+                    const rating = row.rym_rating ? row.rym_rating.toFixed(0) : '<span class="no-data">-</span>';
+
+                    return `
+                        <tr>
+                            <td>${escapeHtml(row.artists || '')}</td>
+                            <td>${escapeHtml(row.title || '')}</td>
+                            <td>${escapeHtml(row.submitter_name || '')}</td>
+                            <td class="${placeClass}">${row.placement}</td>
+                            <td>${row.raw_score >= 0 ? '+' : ''}${row.raw_score}</td>
+                            <td class="${zClass}">${row.z_score >= 0 ? '+' : ''}${row.z_score.toFixed(2)}</td>
+                            <td class="hide-mobile">${plays}</td>
+                            <td class="hide-mobile">${rating}</td>
+                            <td class="hide-mobile">${escapeHtml(row.round_name || '')}</td>
+                        </tr>
+                    `;
+                }).join('');
+            }
+
+            document.getElementById('results').style.display = 'block';
+            updateSortHeaders();
+        }
+
+        function updateSortHeaders() {
+            document.querySelectorAll('th[data-sort]').forEach(th => {
+                th.classList.remove('sorted-asc', 'sorted-desc');
+                if (th.dataset.sort === currentSort.column) {
+                    th.classList.add(currentSort.direction === 'asc' ? 'sorted-asc' : 'sorted-desc');
+                }
+            });
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function quickFilter(type) {
+            document.getElementById('artist-search').value = '';
+            document.getElementById('track-search').value = '';
+            document.getElementById('submitter-filter').value = '';
+
+            switch (type) {
+                case 'winners':
+                    document.getElementById('result-filter').value = 'winners';
+                    currentSort = { column: 'z_score', direction: 'desc' };
+                    break;
+                case 'podiums':
+                    document.getElementById('result-filter').value = 'podiums';
+                    currentSort = { column: 'z_score', direction: 'desc' };
+                    break;
+                case 'best-z':
+                    document.getElementById('result-filter').value = 'all';
+                    currentSort = { column: 'z_score', direction: 'desc' };
+                    break;
+                case 'worst-z':
+                    document.getElementById('result-filter').value = 'all';
+                    currentSort = { column: 'z_score', direction: 'asc' };
+                    break;
+                case 'all':
+                    document.getElementById('result-filter').value = 'all';
+                    currentSort = { column: 'z_score', direction: 'desc' };
+                    break;
+            }
+            doSearch();
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            initDB();
+
+            document.getElementById('search-btn').addEventListener('click', doSearch);
+
+            ['artist-search', 'track-search'].forEach(id => {
+                document.getElementById(id).addEventListener('keypress', e => {
+                    if (e.key === 'Enter') doSearch();
+                });
+            });
+
+            ['submitter-filter', 'result-filter'].forEach(id => {
+                document.getElementById(id).addEventListener('change', doSearch);
+            });
+
+            document.querySelectorAll('th[data-sort]').forEach(th => {
+                th.addEventListener('click', () => {
+                    const col = th.dataset.sort;
+                    if (currentSort.column === col) {
+                        currentSort.direction = currentSort.direction === 'asc' ? 'desc' : 'asc';
+                    } else {
+                        currentSort.column = col;
+                        currentSort.direction = ['z_score', 'raw_score', 'lastfm_plays', 'rym_rating'].includes(col) ? 'desc' : 'asc';
+                    }
+                    doSearch();
+                });
+            });
+        });
+    </script>
+</body>
+</html>
