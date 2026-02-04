@@ -143,6 +143,18 @@
         .leaderboard th, .leaderboard td { text-align: center; }
         .leaderboard td:first-child { text-align: left; font-weight: 500; }
 
+        .season-checks label {
+            margin-right: 8px;
+            font-size: 13px;
+            cursor: pointer;
+        }
+        .season-checks input {
+            margin-right: 3px;
+            cursor: pointer;
+        }
+        .genre { color: #6c757d; font-size: 12px; }
+        .duration { color: #6c757d; font-size: 13px; }
+
         @media (max-width: 800px) {
             th, td { padding: 8px 6px; font-size: 13px; }
             .hide-mobile { display: none; }
@@ -192,6 +204,12 @@
                     </select>
                 </div>
             </div>
+            <div class="filter-group" style="margin-top: 10px;">
+                <label style="margin-right: 10px;">Seasons:</label>
+                <span id="season-checkboxes" class="season-checks"></span>
+                <button onclick="toggleAllSeasons(true)" style="padding: 4px 8px; font-size: 11px; margin-left: 10px;">All</button>
+                <button onclick="toggleAllSeasons(false)" style="padding: 4px 8px; font-size: 11px;">None</button>
+            </div>
             <div class="quick-links">
                 <button onclick="quickFilter('winners')">Winners</button>
                 <button onclick="quickFilter('podiums')">Podiums</button>
@@ -210,10 +228,10 @@
                         <th data-sort="title">Track</th>
                         <th data-sort="submitter_name">Submitter</th>
                         <th data-sort="placement">Place</th>
-                        <th data-sort="raw_score">Pts</th>
                         <th data-sort="z_score">Z</th>
+                        <th class="hide-mobile" data-sort="genre">Genre</th>
+                        <th class="hide-mobile" data-sort="duration_ms">Length</th>
                         <th class="hide-mobile" data-sort="lastfm_plays">Plays</th>
-                        <th class="hide-mobile" data-sort="rym_rating">Rating</th>
                         <th class="hide-mobile" data-sort="round_name">Round</th>
                     </tr>
                 </thead>
@@ -228,6 +246,20 @@
         let currentResults = [];
         let currentSort = { column: 'z_score', direction: 'desc' };
         let submitters = [];
+
+        // Season data (id prefix -> season number)
+        const SEASONS = [
+            { num: 1, prefix: 'b589a150', label: 'S1' },
+            { num: 2, prefix: '7d7ad27e', label: 'S2' },
+            { num: 3, prefix: '381cf26a', label: 'S3' },
+            { num: 4, prefix: '1f8708c8', label: 'S4' },
+            { num: 5, prefix: '8a32b58c', label: 'S5' },
+            { num: 6, prefix: 'a66f9596', label: 'S6' },
+            { num: 7, prefix: '046ab792', label: 'S7' },
+            { num: 8, prefix: '9dd2e5da', label: 'S8' },
+            { num: 9, prefix: 'a977e7c8', label: 'S9' },
+        ];
+        let selectedSeasons = new Set(SEASONS.map(s => s.num));
 
         async function initDB() {
             try {
@@ -265,6 +297,9 @@
 
                 // Render leaderboard
                 renderLeaderboard();
+
+                // Initialize season checkboxes
+                initSeasonCheckboxes();
 
                 document.getElementById('loading').style.display = 'none';
                 document.getElementById('app').style.display = 'block';
@@ -324,6 +359,48 @@
             return str.replace(/'/g, "''");
         }
 
+        function initSeasonCheckboxes() {
+            const container = document.getElementById('season-checkboxes');
+            container.innerHTML = SEASONS.map(s => `
+                <label>
+                    <input type="checkbox" value="${s.num}" checked onchange="toggleSeason(${s.num})">
+                    ${s.label}
+                </label>
+            `).join('');
+        }
+
+        function toggleSeason(num) {
+            if (selectedSeasons.has(num)) {
+                selectedSeasons.delete(num);
+            } else {
+                selectedSeasons.add(num);
+            }
+            doSearch();
+        }
+
+        function toggleAllSeasons(selectAll) {
+            const checkboxes = document.querySelectorAll('#season-checkboxes input');
+            checkboxes.forEach(cb => cb.checked = selectAll);
+            if (selectAll) {
+                selectedSeasons = new Set(SEASONS.map(s => s.num));
+            } else {
+                selectedSeasons.clear();
+            }
+            doSearch();
+        }
+
+        function getSeasonPrefixes() {
+            return SEASONS.filter(s => selectedSeasons.has(s.num)).map(s => s.prefix);
+        }
+
+        function formatDuration(ms) {
+            if (!ms) return '-';
+            const secs = Math.floor(ms / 1000);
+            const mins = Math.floor(secs / 60);
+            const remainingSecs = secs % 60;
+            return `${mins}:${remainingSecs.toString().padStart(2, '0')}`;
+        }
+
         function doSearch() {
             if (!db) return;
 
@@ -335,34 +412,46 @@
             let conditions = [];
 
             if (artist) {
-                conditions.push(`LOWER(artists) LIKE '%${escapeSql(artist.toLowerCase())}%'`);
+                conditions.push(`LOWER(s.artists) LIKE '%${escapeSql(artist.toLowerCase())}%'`);
             }
             if (track) {
-                conditions.push(`LOWER(title) LIKE '%${escapeSql(track.toLowerCase())}%'`);
+                conditions.push(`LOWER(s.title) LIKE '%${escapeSql(track.toLowerCase())}%'`);
             }
             if (submitter) {
-                conditions.push(`submitter_id = '${escapeSql(submitter)}'`);
+                conditions.push(`s.submitter_id = '${escapeSql(submitter)}'`);
+            }
+
+            // Season filter
+            const prefixes = getSeasonPrefixes();
+            if (prefixes.length > 0 && prefixes.length < SEASONS.length) {
+                const seasonConds = prefixes.map(p => `s.season_id LIKE '${p}%'`).join(' OR ');
+                conditions.push(`(${seasonConds})`);
+            } else if (prefixes.length === 0) {
+                conditions.push('1=0'); // No seasons selected
             }
 
             switch (resultFilter) {
-                case 'winners': conditions.push('is_winner = 1'); break;
-                case 'podiums': conditions.push('is_podium = 1'); break;
-                case 'with-plays': conditions.push('lastfm_plays IS NOT NULL'); break;
-                case 'with-rating': conditions.push('rym_rating IS NOT NULL'); break;
+                case 'winners': conditions.push('s.is_winner = 1'); break;
+                case 'podiums': conditions.push('s.is_podium = 1'); break;
+                case 'with-plays': conditions.push('s.lastfm_plays IS NOT NULL'); break;
+                case 'with-rating': conditions.push('s.rym_rating IS NOT NULL'); break;
             }
 
             const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
 
             let orderCol = currentSort.column;
-            if (['z_score', 'raw_score', 'placement', 'lastfm_plays', 'rym_rating'].includes(orderCol)) {
+            if (['z_score', 'raw_score', 'placement', 'lastfm_plays', 'rym_rating', 'duration_ms'].includes(orderCol)) {
                 orderCol = `CAST(${orderCol} AS REAL)`;
             }
             const orderClause = `ORDER BY ${orderCol} ${currentSort.direction.toUpperCase()} NULLS LAST`;
 
             const query = `
-                SELECT artists, title, submitter_name, placement, raw_score, z_score,
-                       lastfm_plays, rym_rating, round_name
-                FROM submission_scores
+                SELECT s.artists, s.title, s.submitter_name, s.placement, s.raw_score, s.z_score,
+                       s.lastfm_plays, s.rym_rating, s.round_name, s.season_id,
+                       am.genre, tm.duration_ms
+                FROM submission_scores s
+                LEFT JOIN artist_metadata am ON am.artist_norm = s.artist_norm
+                LEFT JOIN track_metadata tm ON tm.artist_norm = s.artist_norm AND tm.track_norm = s.track_norm
                 ${whereClause}
                 ${orderClause}
                 LIMIT 500
@@ -398,7 +487,8 @@
                     const placeClass = row.placement <= 3 ? `placement-${row.placement}` : '';
                     const zClass = row.z_score >= 0 ? 'z-positive' : 'z-negative';
                     const plays = row.lastfm_plays ? row.lastfm_plays.toLocaleString() : '<span class="no-data">-</span>';
-                    const rating = row.rym_rating ? row.rym_rating.toFixed(0) : '<span class="no-data">-</span>';
+                    const genre = row.genre ? `<span class="genre">${escapeHtml(row.genre)}</span>` : '<span class="no-data">-</span>';
+                    const duration = row.duration_ms ? `<span class="duration">${formatDuration(row.duration_ms)}</span>` : '<span class="no-data">-</span>';
 
                     return `
                         <tr>
@@ -406,10 +496,10 @@
                             <td>${escapeHtml(row.title || '')}</td>
                             <td>${escapeHtml(row.submitter_name || '')}</td>
                             <td class="${placeClass}">${row.placement}</td>
-                            <td>${row.raw_score >= 0 ? '+' : ''}${row.raw_score}</td>
                             <td class="${zClass}">${row.z_score >= 0 ? '+' : ''}${row.z_score.toFixed(2)}</td>
+                            <td class="hide-mobile">${genre}</td>
+                            <td class="hide-mobile">${duration}</td>
                             <td class="hide-mobile">${plays}</td>
-                            <td class="hide-mobile">${rating}</td>
                             <td class="hide-mobile">${escapeHtml(row.round_name || '')}</td>
                         </tr>
                     `;
