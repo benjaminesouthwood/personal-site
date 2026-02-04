@@ -228,6 +228,7 @@
                         <th data-sort="title">Track</th>
                         <th data-sort="submitter_name">Submitter</th>
                         <th data-sort="placement">Place</th>
+                        <th data-sort="raw_score">Points</th>
                         <th data-sort="z_score">Z</th>
                         <th class="hide-mobile" data-sort="genre">Genre</th>
                         <th class="hide-mobile" data-sort="duration_ms">Length</th>
@@ -479,7 +480,7 @@
             const countEl = document.getElementById('result-count');
 
             if (currentResults.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="9" class="no-data">No results</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="10" class="no-data">No results</td></tr>';
                 countEl.textContent = '0 results';
             } else {
                 countEl.textContent = `${currentResults.length}${currentResults.length >= 500 ? '+' : ''} results`;
@@ -496,6 +497,7 @@
                             <td>${escapeHtml(row.title || '')}</td>
                             <td>${escapeHtml(row.submitter_name || '')}</td>
                             <td class="${placeClass}">${row.placement}</td>
+                            <td>${row.raw_score}</td>
                             <td class="${zClass}">${row.z_score >= 0 ? '+' : ''}${row.z_score.toFixed(2)}</td>
                             <td class="hide-mobile">${genre}</td>
                             <td class="hide-mobile">${duration}</td>
