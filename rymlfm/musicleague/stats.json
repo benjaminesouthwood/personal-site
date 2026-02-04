@@ -660,6 +660,344 @@
       "placement": 1
     }
   ],
+  "artists": {
+    "top": [
+      {
+        "artist": "Dolly Parton",
+        "avg_z": 1.418,
+        "count": 5,
+        "submitters": "Sam Bowman, Michael Hopkins, Samuel Fawcett"
+      },
+      {
+        "artist": "Amyl and The Sniffers",
+        "avg_z": 1.375,
+        "count": 3,
+        "submitters": "Cillian Fleming"
+      },
+      {
+        "artist": "John Fahey",
+        "avg_z": 1.291,
+        "count": 3,
+        "submitters": "Ben Southwood, Robbie Bowman"
+      },
+      {
+        "artist": "Steeleye Span",
+        "avg_z": 1.088,
+        "count": 4,
+        "submitters": "Ben Southwood, Andrew Pearson, Sam Bowman"
+      },
+      {
+        "artist": "Vashti Bunyan",
+        "avg_z": 0.893,
+        "count": 3,
+        "submitters": "Samuel Fawcett, Sebastien Krier, Andrew Pearson"
+      },
+      {
+        "artist": "Yusuf / Cat Stevens",
+        "avg_z": 0.787,
+        "count": 3,
+        "submitters": "Sam Dumitriu, Timothy Howard, Andrew Pearson"
+      },
+      {
+        "artist": "Iron Maiden",
+        "avg_z": 0.772,
+        "count": 5,
+        "submitters": "Sam Dumitriu, Samuel Fawcett, Bruce Collie"
+      },
+      {
+        "artist": "Susanne Sundf\u00f8r",
+        "avg_z": 0.763,
+        "count": 5,
+        "submitters": "Sam Bowman, Robbie Bowman"
+      },
+      {
+        "artist": "Lana Del Rey",
+        "avg_z": 0.707,
+        "count": 3,
+        "submitters": "Samuel Fawcett, Ned Donovan, Sam Bowman"
+      },
+      {
+        "artist": "Magdalena Bay",
+        "avg_z": 0.701,
+        "count": 3,
+        "submitters": "Robbie Bowman, Stuart Ritchie"
+      },
+      {
+        "artist": "The Chats",
+        "avg_z": 0.658,
+        "count": 3,
+        "submitters": "Stuart Ritchie, Cillian Fleming"
+      },
+      {
+        "artist": "The Magnetic Fields",
+        "avg_z": 0.658,
+        "count": 4,
+        "submitters": "Sam Bowman, Olly Barnaby"
+      },
+      {
+        "artist": "The Replacements",
+        "avg_z": 0.582,
+        "count": 3,
+        "submitters": "Kevin Kramer, Andrew Pearson, Sam Dumitriu"
+      },
+      {
+        "artist": "Old Sorcery",
+        "avg_z": 0.536,
+        "count": 3,
+        "submitters": "Samuel Fawcett"
+      },
+      {
+        "artist": "Van Morrison",
+        "avg_z": 0.527,
+        "count": 4,
+        "submitters": "Kevin Kramer, Sam Bowman, Andrew Pearson"
+      }
+    ],
+    "bottom": [
+      {
+        "artist": "King Crimson",
+        "avg_z": -1.62,
+        "count": 3,
+        "submitters": "Jeremy Driver, Aria Babu, Pedro Serodio"
+      },
+      {
+        "artist": "The Simpsons",
+        "avg_z": -1.452,
+        "count": 3,
+        "submitters": "Harry Bainbridge"
+      },
+      {
+        "artist": "Taylor Swift",
+        "avg_z": -1.324,
+        "count": 5,
+        "submitters": "Jeremy Driver, Olly Barnaby, Aria Babu"
+      },
+      {
+        "artist": "Tom Waits",
+        "avg_z": -1.276,
+        "count": 5,
+        "submitters": "Stuart Ritchie, Kevin Kramer, Samuel Fawcett"
+      },
+      {
+        "artist": "The Who",
+        "avg_z": -1.14,
+        "count": 3,
+        "submitters": "Kevin Kramer"
+      },
+      {
+        "artist": "Kunt and the Gang",
+        "avg_z": -1.137,
+        "count": 4,
+        "submitters": "Jeremy Driver, Stuart Ritchie, Olly Barnaby"
+      },
+      {
+        "artist": "LCD Soundsystem",
+        "avg_z": -0.998,
+        "count": 3,
+        "submitters": "Cillian Fleming, Michael Hopkins, Nick Partington"
+      },
+      {
+        "artist": "Daft Punk",
+        "avg_z": -0.897,
+        "count": 3,
+        "submitters": "Nick Partington, Samuel Fawcett"
+      },
+      {
+        "artist": "John Cooper Clarke",
+        "avg_z": -0.879,
+        "count": 4,
+        "submitters": "Michael Hopkins"
+      },
+      {
+        "artist": "Pearl Jam",
+        "avg_z": -0.792,
+        "count": 3,
+        "submitters": "Cillian Fleming, Philip Salter"
+      },
+      {
+        "artist": "The Kinks",
+        "avg_z": -0.754,
+        "count": 6,
+        "submitters": "Michael Hopkins, Ned Donovan, Timothy Howard"
+      },
+      {
+        "artist": "Half Man Half Biscuit",
+        "avg_z": -0.748,
+        "count": 4,
+        "submitters": "Andrew Pearson, Olly Barnaby"
+      },
+      {
+        "artist": "The National",
+        "avg_z": -0.741,
+        "count": 3,
+        "submitters": "Cillian Fleming, Aria Babu, Bruce Collie"
+      },
+      {
+        "artist": "Soft Machine",
+        "avg_z": -0.705,
+        "count": 3,
+        "submitters": "Sebastien Krier"
+      },
+      {
+        "artist": "t.A.T.u.",
+        "avg_z": -0.699,
+        "count": 5,
+        "submitters": "Harry Bainbridge, Olly Barnaby, Nick Partington"
+      }
+    ]
+  },
+  "high_potential": [
+    {
+      "artist": "Pastor T.L. Barrett and the Youth for Christ Choir",
+      "track": "Like a Ship",
+      "plays": 15,
+      "avg_z": 3.315
+    },
+    {
+      "artist": "Yukihiro Takahashi",
+      "track": "\u30c9\u30ea\u30c3\u30d7\u30fb\u30c9\u30e9\u30a4\u30fb\u30a2\u30a4\u30ba - 2021 Remastering For Grand Espoir",
+      "plays": 3,
+      "avg_z": 3.166
+    },
+    {
+      "artist": "Holly Herndon",
+      "track": "Frontier",
+      "plays": 4,
+      "avg_z": 2.947
+    },
+    {
+      "artist": "Alessandro Cortini",
+      "track": "Iniziare",
+      "plays": 11,
+      "avg_z": 2.907
+    },
+    {
+      "artist": "Ballboy",
+      "track": "A Day In Space",
+      "plays": 3,
+      "avg_z": 2.739
+    },
+    {
+      "artist": "Sarge",
+      "track": "Beguiling",
+      "plays": 7,
+      "avg_z": 2.667
+    },
+    {
+      "artist": "Mort Garson",
+      "track": "Swingin' Spathiphyllums",
+      "plays": 5,
+      "avg_z": 2.588
+    },
+    {
+      "artist": "Good Shoes",
+      "track": "Morden",
+      "plays": 3,
+      "avg_z": 2.449
+    },
+    {
+      "artist": "Aphrodite's Child",
+      "track": "The Four Horsemen",
+      "plays": 7,
+      "avg_z": 2.385
+    },
+    {
+      "artist": "Shawn Wasabi, raychel jay",
+      "track": "the snack that smiles back (feat. raychel jay)",
+      "plays": 7,
+      "avg_z": 2.368
+    },
+    {
+      "artist": "Johnny Doran",
+      "track": "Colonel Fraser, My Love Is in America, Rakish Paddy",
+      "plays": 18,
+      "avg_z": 2.33
+    },
+    {
+      "artist": "Teen Mortgage",
+      "track": "S.W.A.S.",
+      "plays": 12,
+      "avg_z": 2.294
+    },
+    {
+      "artist": "Notch",
+      "track": "Nuttin Nuh Go So",
+      "plays": 13,
+      "avg_z": 2.201
+    },
+    {
+      "artist": "Focus",
+      "track": "Hocus Pocus",
+      "plays": 4,
+      "avg_z": 2.126
+    },
+    {
+      "artist": "Philip Glass, XA4, Jaro",
+      "track": "Train I (XA4 ft. Jaro Remix)",
+      "plays": 5,
+      "avg_z": 2.108
+    },
+    {
+      "artist": "Frankie Valli & The Four Seasons",
+      "track": "The Night",
+      "plays": 12,
+      "avg_z": 2.062
+    },
+    {
+      "artist": "Pat Metheny Group",
+      "track": "Last Train Home",
+      "plays": 7,
+      "avg_z": 2.0
+    },
+    {
+      "artist": "Imogen Heap",
+      "track": "Hide and Seek",
+      "plays": 11,
+      "avg_z": 2.0
+    },
+    {
+      "artist": "Pinegrove",
+      "track": "Old Friends",
+      "plays": 3,
+      "avg_z": 1.987
+    },
+    {
+      "artist": "Sonic's Rendezvous Band",
+      "track": "City Slang - The Best Stuff You Havent Heard",
+      "plays": 5,
+      "avg_z": 1.946
+    },
+    {
+      "artist": "Dilated Peoples, Kanye West",
+      "track": "This Way",
+      "plays": 6,
+      "avg_z": 1.929
+    },
+    {
+      "artist": "DMX",
+      "track": "X Gon' Give It To Ya",
+      "plays": 3,
+      "avg_z": 1.917
+    },
+    {
+      "artist": "Beirut",
+      "track": "Scenic World - BER-ABQ Version",
+      "plays": 3,
+      "avg_z": 1.902
+    },
+    {
+      "artist": "Conjurer, Pijn",
+      "track": "High Spirits",
+      "plays": 5,
+      "avg_z": 1.837
+    },
+    {
+      "artist": "The Beths",
+      "track": "Metal",
+      "plays": 6,
+      "avg_z": 1.835
+    }
+  ],
   "summary": {
     "total_submissions": 2630,
     "total_rounds": 152,

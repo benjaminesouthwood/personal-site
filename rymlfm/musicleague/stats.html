@@ -108,6 +108,30 @@
         .heatmap td.strong-negative { background: rgba(220, 53, 69, 0.6); color: white; }
         .heatmap td.no-data { color: #ccc; }
 
+        .artist-list {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .artist-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 12px;
+            border-bottom: 1px solid #eee;
+        }
+        .artist-item:last-child { border-bottom: none; }
+        .artist-item .name { font-weight: 500; flex: 1; }
+        .artist-item .meta { color: #666; font-size: 12px; margin-left: 10px; }
+        .artist-item .z-score {
+            font-weight: bold;
+            min-width: 60px;
+            text-align: right;
+        }
+        .artist-item .z-score.positive { color: #28a745; }
+        .artist-item .z-score.negative { color: #dc3545; }
+        .artist-item .track { color: #666; font-size: 12px; }
+        .artist-item .plays { color: #007bff; font-size: 12px; margin-left: 8px; }
+
         .loading { text-align: center; padding: 40px; color: #666; }
 
         @media (max-width: 600px) {
@@ -194,6 +218,24 @@
                 </div>
             </div>
         </div>
+
+        <h2>Artist Performance</h2>
+        <div class="chart-grid">
+            <div class="chart-container">
+                <h3>Top Artists (min 3 submissions)</h3>
+                <div class="artist-list" id="top-artists"></div>
+            </div>
+            <div class="chart-container">
+                <h3>Bottom Artists (min 3 submissions)</h3>
+                <div class="artist-list" id="bottom-artists"></div>
+            </div>
+        </div>
+
+        <h2>High Potential Artists for Ben</h2>
+        <div class="chart-container">
+            <p style="color: #666; font-size: 13px; margin-bottom: 15px;">Artists with positive avg z-score that have songs in Ben's optimal 3-20 play range</p>
+            <div class="artist-list" id="high-potential"></div>
+        </div>
     </div>
 
     <script>
@@ -213,6 +255,8 @@
                 renderWikipedia();
                 renderHeatmap();
                 renderSeasonChart();
+                renderArtists();
+                renderHighPotential();
 
                 document.getElementById('loading').style.display = 'none';
                 document.getElementById('app').style.display = 'block';
@@ -426,6 +470,52 @@
                     }
                 }
             });
+        }
+
+        function renderArtists() {
+            const a = stats.artists;
+
+            // Top artists
+            let topHtml = '';
+            a.top.forEach(item => {
+                topHtml += `
+                    <div class="artist-item">
+                        <span class="name">${item.artist}</span>
+                        <span class="meta">n=${item.count}</span>
+                        <span class="z-score positive">+${item.avg_z.toFixed(2)}</span>
+                    </div>
+                `;
+            });
+            document.getElementById('top-artists').innerHTML = topHtml;
+
+            // Bottom artists
+            let bottomHtml = '';
+            a.bottom.forEach(item => {
+                bottomHtml += `
+                    <div class="artist-item">
+                        <span class="name">${item.artist}</span>
+                        <span class="meta">n=${item.count}</span>
+                        <span class="z-score negative">${item.avg_z.toFixed(2)}</span>
+                    </div>
+                `;
+            });
+            document.getElementById('bottom-artists').innerHTML = bottomHtml;
+        }
+
+        function renderHighPotential() {
+            const hp = stats.high_potential;
+            let html = '';
+            hp.forEach(item => {
+                html += `
+                    <div class="artist-item">
+                        <span class="name">${item.artist}</span>
+                        <span class="track">${item.track}</span>
+                        <span class="plays">${item.plays} plays</span>
+                        <span class="z-score positive">+${item.avg_z.toFixed(2)}</span>
+                    </div>
+                `;
+            });
+            document.getElementById('high-potential').innerHTML = html;
         }
 
         document.addEventListener('DOMContentLoaded', loadStats);
