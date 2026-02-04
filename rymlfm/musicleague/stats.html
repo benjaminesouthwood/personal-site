@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Music League - Statistics</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        * { box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+            color: #333;
+        }
+        h1 { margin-bottom: 5px; }
+        h2 { margin-top: 30px; margin-bottom: 15px; color: #444; border-bottom: 2px solid #007bff; padding-bottom: 5px; }
+        .subtitle { color: #666; margin-bottom: 20px; }
+        .nav { margin-bottom: 20px; }
+        .nav a { color: #007bff; text-decoration: none; margin-right: 15px; }
+        .nav a:hover { text-decoration: underline; }
+        .nav a.active { font-weight: bold; }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+        .stat-card {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+        .stat-card .value { font-size: 28px; font-weight: bold; color: #007bff; }
+        .stat-card .label { font-size: 12px; color: #666; margin-top: 5px; }
+
+        .chart-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        .chart-container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .chart-container h3 {
+            margin: 0 0 15px 0;
+            color: #444;
+            font-size: 16px;
+        }
+        .chart-wrapper {
+            position: relative;
+            height: 300px;
+        }
+        .chart-wrapper.tall {
+            height: 400px;
+        }
+
+        .wiki-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+        }
+        .wiki-card {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+        .wiki-card .pct { font-size: 48px; font-weight: bold; color: #28a745; }
+        .wiki-card .label { color: #666; margin-top: 5px; }
+        .wiki-card .detail { font-size: 12px; color: #999; }
+
+        .heatmap-container {
+            overflow-x: auto;
+        }
+        .heatmap {
+            border-collapse: collapse;
+            width: 100%;
+            font-size: 13px;
+        }
+        .heatmap th, .heatmap td {
+            padding: 8px 12px;
+            text-align: center;
+            border: 1px solid #eee;
+        }
+        .heatmap th {
+            background: #f8f9fa;
+            font-weight: 600;
+        }
+        .heatmap td.submitter {
+            text-align: left;
+            font-weight: 500;
+            background: #f8f9fa;
+        }
+        .heatmap td.positive { background: rgba(40, 167, 69, 0.3); }
+        .heatmap td.negative { background: rgba(220, 53, 69, 0.3); }
+        .heatmap td.strong-positive { background: rgba(40, 167, 69, 0.6); color: white; }
+        .heatmap td.strong-negative { background: rgba(220, 53, 69, 0.6); color: white; }
+        .heatmap td.no-data { color: #ccc; }
+
+        .loading { text-align: center; padding: 40px; color: #666; }
+
+        @media (max-width: 600px) {
+            .chart-grid { grid-template-columns: 1fr; }
+            .chart-wrapper { height: 250px; }
+        }
+    </style>
+</head>
+<body>
+    <h1>Music League Statistics</h1>
+    <p class="subtitle">Comprehensive analysis of submission performance patterns</p>
+
+    <div class="nav">
+        <a href="/rymlfm/">Albums</a>
+        <a href="/rymlfm/songs/">Songs</a>
+        <a href="/rymlfm/musicleague/">Explorer</a>
+        <a href="/rymlfm/musicleague/stats.html" class="active">Statistics</a>
+    </div>
+
+    <div id="loading" class="loading">
+        <p>Loading statistics...</p>
+    </div>
+
+    <div id="app" style="display: none;">
+        <div class="stats-grid" id="summary-stats"></div>
+
+        <h2>Performance by Category</h2>
+        <div class="chart-grid">
+            <div class="chart-container">
+                <h3>Average Z-Score by Decade</h3>
+                <div class="chart-wrapper">
+                    <canvas id="decadeChart"></canvas>
+                </div>
+            </div>
+            <div class="chart-container">
+                <h3>Average Z-Score by Duration</h3>
+                <div class="chart-wrapper">
+                    <canvas id="durationChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <div class="chart-grid">
+            <div class="chart-container">
+                <h3>Average Z-Score by Genre (min 20 submissions)</h3>
+                <div class="chart-wrapper tall">
+                    <canvas id="genreChart"></canvas>
+                </div>
+            </div>
+            <div class="chart-container">
+                <h3>Ben's Performance by Decade</h3>
+                <div class="chart-wrapper">
+                    <canvas id="benDecadeChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <h2>Wikipedia Coverage</h2>
+        <div class="wiki-stats">
+            <div class="wiki-card">
+                <div class="pct" id="wiki-artist-pct">-</div>
+                <div class="label">Artists with Wikipedia</div>
+                <div class="detail" id="wiki-artist-detail"></div>
+            </div>
+            <div class="wiki-card">
+                <div class="pct" id="wiki-song-pct">-</div>
+                <div class="label">Songs with Wikipedia</div>
+                <div class="detail" id="wiki-song-detail"></div>
+            </div>
+        </div>
+
+        <h2>Submitter x Genre Heatmap</h2>
+        <div class="chart-container">
+            <p style="color: #666; font-size: 13px; margin-bottom: 15px;">Average z-score by submitter and genre (min 5 submissions per cell)</p>
+            <div class="heatmap-container" id="heatmap-container"></div>
+        </div>
+
+        <h2>Season Trends</h2>
+        <div class="chart-grid">
+            <div class="chart-container">
+                <h3>Average Z-Score by Season</h3>
+                <div class="chart-wrapper">
+                    <canvas id="seasonChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let stats = null;
+
+        async function loadStats() {
+            try {
+                const response = await fetch('/rymlfm/musicleague/stats.json');
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                stats = await response.json();
+
+                renderSummary();
+                renderDecadeChart();
+                renderDurationChart();
+                renderGenreChart();
+                renderBenDecadeChart();
+                renderWikipedia();
+                renderHeatmap();
+                renderSeasonChart();
+
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('app').style.display = 'block';
+            } catch (err) {
+                document.getElementById('loading').innerHTML = `<p style="color: #dc3545;">Error: ${err.message}</p>`;
+                console.error(err);
+            }
+        }
+
+        function renderSummary() {
+            const s = stats.summary;
+            document.getElementById('summary-stats').innerHTML = `
+                <div class="stat-card"><div class="value">${s.total_submissions.toLocaleString()}</div><div class="label">Submissions</div></div>
+                <div class="stat-card"><div class="value">${s.total_rounds}</div><div class="label">Rounds</div></div>
+                <div class="stat-card"><div class="value">${s.total_submitters}</div><div class="label">Submitters</div></div>
+                <div class="stat-card"><div class="value">${s.total_artists.toLocaleString()}</div><div class="label">Unique Artists</div></div>
+            `;
+        }
+
+        function getBarColors(values) {
+            return values.map(v => v >= 0 ? 'rgba(40, 167, 69, 0.7)' : 'rgba(220, 53, 69, 0.7)');
+        }
+
+        function renderDecadeChart() {
+            const ctx = document.getElementById('decadeChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: stats.by_decade.labels,
+                    datasets: [{
+                        label: 'Avg Z-Score',
+                        data: stats.by_decade.values,
+                        backgroundColor: getBarColors(stats.by_decade.values),
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                afterLabel: (ctx) => `n = ${stats.by_decade.counts[ctx.dataIndex]}`
+                            }
+                        }
+                    },
+                    scales: {
+                        y: { beginAtZero: true, title: { display: true, text: 'Avg Z-Score' } }
+                    }
+                }
+            });
+        }
+
+        function renderDurationChart() {
+            const ctx = document.getElementById('durationChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: stats.by_duration.labels,
+                    datasets: [{
+                        label: 'Avg Z-Score',
+                        data: stats.by_duration.values,
+                        backgroundColor: getBarColors(stats.by_duration.values),
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                afterLabel: (ctx) => `n = ${stats.by_duration.counts[ctx.dataIndex]}`
+                            }
+                        }
+                    },
+                    scales: {
+                        y: { beginAtZero: true, title: { display: true, text: 'Avg Z-Score' } }
+                    }
+                }
+            });
+        }
+
+        function renderGenreChart() {
+            const ctx = document.getElementById('genreChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: stats.by_genre.labels,
+                    datasets: [{
+                        label: 'Avg Z-Score',
+                        data: stats.by_genre.values,
+                        backgroundColor: getBarColors(stats.by_genre.values),
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    indexAxis: 'y',
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                afterLabel: (ctx) => `n = ${stats.by_genre.counts[ctx.dataIndex]}`
+                            }
+                        }
+                    },
+                    scales: {
+                        x: { title: { display: true, text: 'Avg Z-Score' } }
+                    }
+                }
+            });
+        }
+
+        function renderBenDecadeChart() {
+            const ctx = document.getElementById('benDecadeChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: stats.ben_by_decade.labels,
+                    datasets: [{
+                        label: "Ben's Avg Z-Score",
+                        data: stats.ben_by_decade.values,
+                        borderColor: '#007bff',
+                        backgroundColor: 'rgba(0, 123, 255, 0.1)',
+                        fill: true,
+                        tension: 0.3
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        tooltip: {
+                            callbacks: {
+                                afterLabel: (ctx) => `n = ${stats.ben_by_decade.counts[ctx.dataIndex]}`
+                            }
+                        }
+                    },
+                    scales: {
+                        y: { beginAtZero: true, title: { display: true, text: 'Avg Z-Score' } }
+                    }
+                }
+            });
+        }
+
+        function renderWikipedia() {
+            const w = stats.wikipedia;
+            document.getElementById('wiki-artist-pct').textContent = w.artist_wiki_pct + '%';
+            document.getElementById('wiki-artist-detail').textContent = `${w.artist_wiki} of ${w.total} tracks`;
+            document.getElementById('wiki-song-pct').textContent = w.song_wiki_pct + '%';
+            document.getElementById('wiki-song-detail').textContent = `${w.song_wiki} of ${w.total} tracks`;
+        }
+
+        function renderHeatmap() {
+            const h = stats.heatmap;
+            let html = '<table class="heatmap"><thead><tr><th>Submitter</th>';
+            h.genres.forEach(g => {
+                html += `<th>${g}</th>`;
+            });
+            html += '</tr></thead><tbody>';
+
+            h.data.forEach(row => {
+                html += `<tr><td class="submitter">${row.submitter}</td>`;
+                h.genres.forEach(g => {
+                    const val = row.genres[g];
+                    if (val === null) {
+                        html += '<td class="no-data">-</td>';
+                    } else {
+                        let cls = '';
+                        if (val >= 0.3) cls = 'strong-positive';
+                        else if (val >= 0) cls = 'positive';
+                        else if (val >= -0.3) cls = 'negative';
+                        else cls = 'strong-negative';
+                        html += `<td class="${cls}">${val >= 0 ? '+' : ''}${val.toFixed(2)}</td>`;
+                    }
+                });
+                html += '</tr>';
+            });
+
+            html += '</tbody></table>';
+            document.getElementById('heatmap-container').innerHTML = html;
+        }
+
+        function renderSeasonChart() {
+            const ctx = document.getElementById('seasonChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: stats.season_trends.labels,
+                    datasets: [{
+                        label: 'Avg Z-Score',
+                        data: stats.season_trends.values,
+                        borderColor: '#6c757d',
+                        backgroundColor: 'rgba(108, 117, 125, 0.1)',
+                        fill: true,
+                        tension: 0.3
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    scales: {
+                        y: { title: { display: true, text: 'Avg Z-Score' } }
+                    }
+                }
+            });
+        }
+
+        document.addEventListener('DOMContentLoaded', loadStats);
+    </script>
+</body>
+</html>
