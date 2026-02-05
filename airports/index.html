@@ -567,10 +567,10 @@
                 L.geoJSON(filteredGeojson, {
                     style: {
                         color: airportColors[airport],
-                        weight: 2,
-                        opacity: 0.9,
+                        weight: 3,
+                        opacity: 1,
                         fillColor: airportColors[airport],
-                        fillOpacity: 0.2
+                        fillOpacity: 0.35
                     },
                     onEachFeature: (feature, layer) => {
                         const props = feature.properties;
