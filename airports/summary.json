@@ -1,0 +1,494 @@
+{
+  "airports": {
+    "MAN": {
+      "name": "Manchester",
+      "country": "UK",
+      "lat": 53.3537,
+      "lon": -2.275,
+      "isochrones": {
+        "ors_driving": [
+          {
+            "time_minutes": 15.0,
+            "population": 509809.75,
+            "population_millions": 0.50980975,
+            "gdp_mio_eur": 0,
+            "gdp_bn_eur": 0.0
+          },
+          {
+            "time_minutes": 30.0,
+            "population": 3079812.25,
+            "population_millions": 3.07981225,
+            "gdp_mio_eur": 0,
+            "gdp_bn_eur": 0.0
+          },
+          {
+            "time_minutes": 45.0,
+            "population": 5863724.5,
+            "population_millions": 5.8637245,
+            "gdp_mio_eur": 0,
+            "gdp_bn_eur": 0.0
+          },
+          {
+            "time_minutes": 60.0,
+            "population": 8283645.0,
+            "population_millions": 8.283645,
+            "gdp_mio_eur": 0,
+            "gdp_bn_eur": 0.0
+          }
+        ],
+        "tt_transit": [
+          {
+            "time_minutes": 15,
+            "population": 8.130346298217773,
+            "population_millions": 8.130346298217773e-06,
+            "gdp_mio_eur": 0,
+            "gdp_bn_eur": 0.0
+          },
+          {
+            "time_minutes": 30,
+            "population": 8.130346298217773,
+            "population_millions": 8.130346298217773e-06,
+            "gdp_mio_eur": 0,
+            "gdp_bn_eur": 0.0
+          },
+          {
+            "time_minutes": 45,
+            "population": 8.130346298217773,
+            "population_millions": 8.130346298217773e-06,
+            "gdp_mio_eur": 0,
+            "gdp_bn_eur": 0.0
+          },
+          {
+            "time_minutes": 60,
+            "population": 8.130346298217773,
+            "population_millions": 8.130346298217773e-06,
+            "gdp_mio_eur": 0,
+            "gdp_bn_eur": 0.0
+          }
+        ],
+        "tt_driving": [
+          {
+            "time_minutes": 15,
+            "population": 1124.8741455078125,
+            "population_millions": 0.0011248741455078125,
+            "gdp_mio_eur": 0,
+            "gdp_bn_eur": 0.0
+          },
+          {
+            "time_minutes": 30,
+            "population": 605904.4375,
+            "population_millions": 0.6059044375,
+            "gdp_mio_eur": 0,
+            "gdp_bn_eur": 0.0
+          },
+          {
+            "time_minutes": 45,
+            "population": 2500814.25,
+            "population_millions": 2.50081425,
+            "gdp_mio_eur": 0,
+            "gdp_bn_eur": 0.0
+          },
+          {
+            "time_minutes": 60,
+            "population": 4836421.0,
+            "population_millions": 4.836421,
+            "gdp_mio_eur": 0,
+            "gdp_bn_eur": 0.0
+          }
+        ]
+      }
+    },
+    "LHR": {
+      "name": "London Heathrow",
+      "country": "UK",
+      "lat": 51.47,
+      "lon": -0.4543,
+      "isochrones": {
+        "tt_driving": [
+          {
+            "time_minutes": 15,
+            "population": 126326.0546875,
+            "population_millions": 0.1263260546875,
+            "gdp_mio_eur": 0,
+            "gdp_bn_eur": 0.0
+          },
+          {
+            "time_minutes": 30,
+            "population": 1914746.0,
+            "population_millions": 1.914746,
+            "gdp_mio_eur": 0,
+            "gdp_bn_eur": 0.0
+          },
+          {
+            "time_minutes": 45,
+            "population": 5625293.0,
+            "population_millions": 5.625293,
+            "gdp_mio_eur": 0,
+            "gdp_bn_eur": 0.0
+          },
+          {
+            "time_minutes": 60,
+            "population": 9353952.0,
+            "population_millions": 9.353952,
+            "gdp_mio_eur": 0,
+            "gdp_bn_eur": 0.0
+          }
+        ],
+        "tt_transit": [
+          {
+            "time_minutes": 15,
+            "population": 471.0115051269531,
+            "population_millions": 0.00047101150512695314,
+            "gdp_mio_eur": 0,
+            "gdp_bn_eur": 0.0
+          },
+          {
+            "time_minutes": 30,
+            "population": 104201.109375,
+            "population_millions": 0.104201109375,
+            "gdp_mio_eur": 0,
+            "gdp_bn_eur": 0.0
+          },
+          {
+            "time_minutes": 45,
+            "population": 752124.25,
+            "population_millions": 0.75212425,
+            "gdp_mio_eur": 0,
+            "gdp_bn_eur": 0.0
+          },
+          {
+            "time_minutes": 60,
+            "population": 1939881.75,
+            "population_millions": 1.93988175,
+            "gdp_mio_eur": 0,
+            "gdp_bn_eur": 0.0
+          }
+        ],
+        "ors_driving": [
+          {
+            "time_minutes": 15.0,
+            "population": 410459.34375,
+            "population_millions": 0.41045934375,
+            "gdp_mio_eur": 0,
+            "gdp_bn_eur": 0.0
+          },
+          {
+            "time_minutes": 30.0,
+            "population": 2776649.0,
+            "population_millions": 2.776649,
+            "gdp_mio_eur": 0,
+            "gdp_bn_eur": 0.0
+          },
+          {
+            "time_minutes": 45.0,
+            "population": 7117793.0,
+            "population_millions": 7.117793,
+            "gdp_mio_eur": 0,
+            "gdp_bn_eur": 0.0
+          },
+          {
+            "time_minutes": 60.0,
+            "population": 11747056.0,
+            "population_millions": 11.747056,
+            "gdp_mio_eur": 0,
+            "gdp_bn_eur": 0.0
+          }
+        ]
+      }
+    },
+    "CDG": {
+      "name": "Paris Charles de Gaulle",
+      "country": "FR",
+      "lat": 49.0097,
+      "lon": 2.5479,
+      "isochrones": {
+        "ors_driving": [
+          {
+            "time_minutes": 15.0,
+            "population": 449449.90625,
+            "population_millions": 0.44944990625,
+            "gdp_mio_eur": 23294.404115648173,
+            "gdp_bn_eur": 23.294404115648174
+          },
+          {
+            "time_minutes": 30.0,
+            "population": 4865285.5,
+            "population_millions": 4.8652855,
+            "gdp_mio_eur": 242987.67466407717,
+            "gdp_bn_eur": 242.98767466407716
+          },
+          {
+            "time_minutes": 45.0,
+            "population": 9818813.0,
+            "population_millions": 9.818813,
+            "gdp_mio_eur": 545400.8560804576,
+            "gdp_bn_eur": 545.4008560804575
+          },
+          {
+            "time_minutes": 60.0,
+            "population": 12444064.0,
+            "population_millions": 12.444064,
+            "gdp_mio_eur": 647511.99379563,
+            "gdp_bn_eur": 647.51199379563
+          }
+        ],
+        "tt_driving": [
+          {
+            "time_minutes": 15,
+            "population": 113013.5234375,
+            "population_millions": 0.1130135234375,
+            "gdp_mio_eur": 8712.556959320678,
+            "gdp_bn_eur": 8.712556959320679
+          },
+          {
+            "time_minutes": 30,
+            "population": 3278497.5,
+            "population_millions": 3.2784975,
+            "gdp_mio_eur": 157150.35005238495,
+            "gdp_bn_eur": 157.15035005238494
+          },
+          {
+            "time_minutes": 45,
+            "population": 8810531.0,
+            "population_millions": 8.810531,
+            "gdp_mio_eur": 470451.38920781104,
+            "gdp_bn_eur": 470.451389207811
+          },
+          {
+            "time_minutes": 60,
+            "population": 11591200.0,
+            "population_millions": 11.5912,
+            "gdp_mio_eur": 616005.5640004931,
+            "gdp_bn_eur": 616.0055640004931
+          }
+        ],
+        "tt_transit": [
+          {
+            "time_minutes": 15,
+            "population": 2665.593017578125,
+            "population_millions": 0.002665593017578125,
+            "gdp_mio_eur": 227.29090363000114,
+            "gdp_bn_eur": 0.22729090363000115
+          },
+          {
+            "time_minutes": 30,
+            "population": 38971.5546875,
+            "population_millions": 0.0389715546875,
+            "gdp_mio_eur": 3293.3567501339057,
+            "gdp_bn_eur": 3.293356750133906
+          },
+          {
+            "time_minutes": 45,
+            "population": 328099.75,
+            "population_millions": 0.32809975,
+            "gdp_mio_eur": 15343.233217739342,
+            "gdp_bn_eur": 15.343233217739343
+          },
+          {
+            "time_minutes": 60,
+            "population": 1783479.875,
+            "population_millions": 1.783479875,
+            "gdp_mio_eur": 84329.3263023613,
+            "gdp_bn_eur": 84.3293263023613
+          }
+        ]
+      }
+    },
+    "AMS": {
+      "name": "Amsterdam Schiphol",
+      "country": "NL",
+      "lat": 52.3105,
+      "lon": 4.7639,
+      "isochrones": {
+        "tt_transit": [
+          {
+            "time_minutes": 15,
+            "population": 5081.5947265625,
+            "population_millions": 0.0050815947265625,
+            "gdp_mio_eur": 0.0,
+            "gdp_bn_eur": 0.0
+          },
+          {
+            "time_minutes": 30,
+            "population": 204841.921875,
+            "population_millions": 0.204841921875,
+            "gdp_mio_eur": 0.0,
+            "gdp_bn_eur": 0.0
+          },
+          {
+            "time_minutes": 45,
+            "population": 1006006.9375,
+            "population_millions": 1.0060069375,
+            "gdp_mio_eur": 258.4028250903381,
+            "gdp_bn_eur": 0.25840282509033813
+          },
+          {
+            "time_minutes": 60,
+            "population": 2473755.0,
+            "population_millions": 2.473755,
+            "gdp_mio_eur": 2880.638338969293,
+            "gdp_bn_eur": 2.880638338969293
+          }
+        ],
+        "tt_driving": [
+          {
+            "time_minutes": 15,
+            "population": 266732.4375,
+            "population_millions": 0.2667324375,
+            "gdp_mio_eur": 0.0,
+            "gdp_bn_eur": 0.0
+          },
+          {
+            "time_minutes": 30,
+            "population": 2585153.0,
+            "population_millions": 2.585153,
+            "gdp_mio_eur": 10959.08007377196,
+            "gdp_bn_eur": 10.95908007377196
+          },
+          {
+            "time_minutes": 45,
+            "population": 6041779.0,
+            "population_millions": 6.041779,
+            "gdp_mio_eur": 33105.46050850135,
+            "gdp_bn_eur": 33.10546050850135
+          },
+          {
+            "time_minutes": 60,
+            "population": 8507211.0,
+            "population_millions": 8.507211,
+            "gdp_mio_eur": 59458.20382822718,
+            "gdp_bn_eur": 59.458203828227184
+          }
+        ],
+        "ors_driving": [
+          {
+            "time_minutes": 15.0,
+            "population": 397794.4375,
+            "population_millions": 0.3977944375,
+            "gdp_mio_eur": 0.8012961768483228,
+            "gdp_bn_eur": 0.0008012961768483227
+          },
+          {
+            "time_minutes": 30.0,
+            "population": 2361106.75,
+            "population_millions": 2.36110675,
+            "gdp_mio_eur": 9942.58258207476,
+            "gdp_bn_eur": 9.94258258207476
+          },
+          {
+            "time_minutes": 45.0,
+            "population": 5273774.0,
+            "population_millions": 5.273774,
+            "gdp_mio_eur": 29582.579648030794,
+            "gdp_bn_eur": 29.582579648030794
+          },
+          {
+            "time_minutes": 60.0,
+            "population": 7673091.0,
+            "population_millions": 7.673091,
+            "gdp_mio_eur": 49755.23829175255,
+            "gdp_bn_eur": 49.75523829175255
+          }
+        ]
+      }
+    }
+  },
+  "comparison": [
+    {
+      "airport": "MAN",
+      "airport_name": "Manchester",
+      "source": "ors",
+      "mode": "driving",
+      "population_millions": 8.283645,
+      "gdp_bn_eur": 0.0
+    },
+    {
+      "airport": "LHR",
+      "airport_name": "London Heathrow",
+      "source": "tt",
+      "mode": "driving",
+      "population_millions": 9.353952,
+      "gdp_bn_eur": 0.0
+    },
+    {
+      "airport": "LHR",
+      "airport_name": "London Heathrow",
+      "source": "tt",
+      "mode": "transit",
+      "population_millions": 1.93988175,
+      "gdp_bn_eur": 0.0
+    },
+    {
+      "airport": "CDG",
+      "airport_name": "Paris Charles de Gaulle",
+      "source": "ors",
+      "mode": "driving",
+      "population_millions": 12.444064,
+      "gdp_bn_eur": 647.51199379563
+    },
+    {
+      "airport": "MAN",
+      "airport_name": "Manchester",
+      "source": "tt",
+      "mode": "transit",
+      "population_millions": 8.130346298217773e-06,
+      "gdp_bn_eur": 0.0
+    },
+    {
+      "airport": "AMS",
+      "airport_name": "Amsterdam Schiphol",
+      "source": "tt",
+      "mode": "transit",
+      "population_millions": 2.473755,
+      "gdp_bn_eur": 2.880638338969293
+    },
+    {
+      "airport": "CDG",
+      "airport_name": "Paris Charles de Gaulle",
+      "source": "tt",
+      "mode": "driving",
+      "population_millions": 11.5912,
+      "gdp_bn_eur": 616.0055640004931
+    },
+    {
+      "airport": "AMS",
+      "airport_name": "Amsterdam Schiphol",
+      "source": "tt",
+      "mode": "driving",
+      "population_millions": 8.507211,
+      "gdp_bn_eur": 59.458203828227184
+    },
+    {
+      "airport": "CDG",
+      "airport_name": "Paris Charles de Gaulle",
+      "source": "tt",
+      "mode": "transit",
+      "population_millions": 1.783479875,
+      "gdp_bn_eur": 84.3293263023613
+    },
+    {
+      "airport": "MAN",
+      "airport_name": "Manchester",
+      "source": "tt",
+      "mode": "driving",
+      "population_millions": 4.836421,
+      "gdp_bn_eur": 0.0
+    },
+    {
+      "airport": "LHR",
+      "airport_name": "London Heathrow",
+      "source": "ors",
+      "mode": "driving",
+      "population_millions": 11.747056,
+      "gdp_bn_eur": 0.0
+    },
+    {
+      "airport": "AMS",
+      "airport_name": "Amsterdam Schiphol",
+      "source": "ors",
+      "mode": "driving",
+      "population_millions": 7.673091,
+      "gdp_bn_eur": 49.75523829175255
+    }
+  ]
+}
