@@ -6,6 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/@turf/turf@6/turf.min.js"></script>
     <style>
         * { box-sizing: border-box; }
         body { margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
@@ -38,13 +39,14 @@
             display: block;
             font-weight: 500;
         }
-        select, input[type="text"] {
+        select, input[type="text"], input[type="password"] {
             width: 100%;
             padding: 10px;
             border: 1px solid #ddd;
             border-radius: 6px;
             font-size: 14px;
             background: white;
+            margin-bottom: 8px;
         }
         select:focus, input:focus { outline: none; border-color: #2E86AB; }
         .coords-display {
@@ -65,6 +67,7 @@
             border-radius: 8px;
             margin-bottom: 15px;
             box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            flex-direction: column;
         }
         .loading.active { display: flex; }
         .spinner {
@@ -74,8 +77,9 @@
             border-top: 3px solid #2E86AB;
             border-radius: 50%;
             animation: spin 1s linear infinite;
-            margin-right: 12px;
+            margin-bottom: 12px;
         }
+        .loading-text { font-size: 13px; color: #666; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
         .stats-table {
             width: 100%;
@@ -100,10 +104,7 @@
         .stats-table td:nth-child(2), .stats-table td:nth-child(3) { text-align: right; font-weight: 500; }
         .stats-table tr:last-child td { border-bottom: none; }
         .stats-table tr:nth-child(even) { background: #f8f9fa; }
-        .population-highlight {
-            color: #2E86AB;
-            font-weight: 600;
-        }
+        .population-highlight { color: #2E86AB; }
         .legend {
             background: white;
             padding: 12px;
@@ -134,14 +135,8 @@
             color: #1565c0;
             line-height: 1.5;
         }
-        .info-box.warning {
-            background: #fff3e0;
-            color: #e65100;
-        }
-        .info-box.setup {
-            background: #fce4ec;
-            color: #c2185b;
-        }
+        .info-box a { color: #1565c0; }
+        .info-box.warning { background: #fff3e0; color: #e65100; }
         .click-prompt {
             text-align: center;
             padding: 30px 20px;
@@ -166,15 +161,10 @@
             display: none;
         }
         .error-box.active { display: block; }
-        .api-key-input {
-            display: flex;
-            gap: 8px;
-            margin-top: 8px;
-        }
-        .api-key-input input {
-            flex: 1;
-        }
-        .api-key-input button {
+        .api-inputs { margin-bottom: 8px; }
+        .api-inputs input { margin-bottom: 8px; }
+        .api-inputs button {
+            width: 100%;
             padding: 10px 16px;
             background: #2E86AB;
             color: white;
@@ -182,9 +172,8 @@
             border-radius: 6px;
             cursor: pointer;
             font-size: 13px;
-            white-space: nowrap;
         }
-        .api-key-input button:hover { background: #236b8a; }
+        .api-inputs button:hover { background: #236b8a; }
         .api-status {
             font-size: 11px;
             margin-top: 8px;
@@ -192,7 +181,8 @@
             border-radius: 4px;
         }
         .api-status.connected { background: #e8f5e9; color: #2e7d32; }
-        .api-status.missing { background: #ffebee; color: #c62828; }
+        .api-status.missing { background: #fff3e0; color: #e65100; }
+        .api-status.loading { background: #e3f2fd; color: #1565c0; }
         .mode-pills {
             display: flex;
             gap: 6px;
@@ -227,6 +217,16 @@
         .total-pop .label { font-size: 12px; opacity: 0.9; margin-bottom: 5px; }
         .total-pop .value { font-size: 28px; font-weight: 700; }
         .total-pop .subtext { font-size: 11px; opacity: 0.8; margin-top: 5px; }
+        .data-status {
+            font-size: 11px;
+            padding: 6px 10px;
+            border-radius: 4px;
+            margin-bottom: 15px;
+            display: none;
+        }
+        .data-status.loading { display: block; background: #e3f2fd; color: #1565c0; }
+        .data-status.loaded { display: block; background: #e8f5e9; color: #2e7d32; }
+        .data-status.error { display: block; background: #ffebee; color: #c62828; }
     </style>
 </head>
 <body>
@@ -235,30 +235,33 @@
         <h2>Travel Time Isochrones</h2>
         <p class="subtitle">Click anywhere to see reachable population</p>
 
+        <div class="data-status" id="dataStatus">Loading population data...</div>
+
         <div class="control-group">
-            <label class="control-label">Geoapify API Key</label>
-            <div class="api-key-input">
-                <input type="text" id="apiKeyInput" placeholder="Enter your API key">
-                <button onclick="saveApiKey()">Save</button>
+            <label class="control-label">TravelTime API Credentials</label>
+            <div class="api-inputs">
+                <input type="text" id="appIdInput" placeholder="Application ID">
+                <input type="password" id="apiKeyInput" placeholder="API Key">
+                <button onclick="saveCredentials()">Save Credentials</button>
             </div>
             <div class="api-status missing" id="apiStatus">
-                No API key set. <a href="https://www.geoapify.com/" target="_blank">Get free key</a>
+                No credentials set. <a href="https://account.traveltime.com/" target="_blank">Get free API key</a>
             </div>
         </div>
 
         <div class="control-group">
             <label class="control-label">Transport Mode</label>
             <div class="mode-pills" id="modePills">
-                <div class="mode-pill active" data-mode="drive">
+                <div class="mode-pill active" data-mode="driving">
                     <span class="icon">🚗</span>Drive
                 </div>
-                <div class="mode-pill" data-mode="transit">
+                <div class="mode-pill" data-mode="public_transport">
                     <span class="icon">🚇</span>Transit
                 </div>
-                <div class="mode-pill" data-mode="bicycle">
+                <div class="mode-pill" data-mode="cycling">
                     <span class="icon">🚴</span>Cycle
                 </div>
-                <div class="mode-pill" data-mode="walk">
+                <div class="mode-pill" data-mode="walking">
                     <span class="icon">🚶</span>Walk
                 </div>
             </div>
@@ -271,7 +274,7 @@
 
         <div class="loading" id="loadingIndicator">
             <div class="spinner"></div>
-            <span>Calculating travel times...</span>
+            <span class="loading-text" id="loadingText">Calculating travel times...</span>
         </div>
 
         <div id="resultsSection">
@@ -306,45 +309,42 @@
 
         <div class="legend">
             <div class="legend-title">Travel Time</div>
-            <div class="legend-item"><div class="legend-color" style="background: #ffffcc;"></div>0-10 minutes</div>
-            <div class="legend-item"><div class="legend-color" style="background: #fed976;"></div>10-20 minutes</div>
-            <div class="legend-item"><div class="legend-color" style="background: #fd8d3c;"></div>20-30 minutes</div>
-            <div class="legend-item"><div class="legend-color" style="background: #fc4e2a;"></div>30-45 minutes</div>
-            <div class="legend-item"><div class="legend-color" style="background: #bd0026;"></div>45-60 minutes</div>
+            <div class="legend-item"><div class="legend-color" style="background: #ffffcc;"></div>0-15 minutes</div>
+            <div class="legend-item"><div class="legend-color" style="background: #fed976;"></div>15-30 minutes</div>
+            <div class="legend-item"><div class="legend-color" style="background: #fd8d3c;"></div>30-45 minutes</div>
+            <div class="legend-item"><div class="legend-color" style="background: #e31a1c;"></div>45-60 minutes</div>
         </div>
 
         <div class="info-box">
-            <strong>Data sources:</strong> Routing via Geoapify (OpenStreetMap data). Population from WorldPop/GHSL estimates.
+            <strong>Data sources:</strong> Routing via TravelTime (includes real transit schedules). Population from WorldPop UK 2020 (~1km grid).
         </div>
 
         <div class="info-box warning">
-            <strong>Note:</strong> Transit isochrones use scheduled public transport data. Results vary by time of day.
+            <strong>Note:</strong> Transit isochrones include walking to/from stops. Results vary by time of day.
         </div>
     </div>
 
     <script>
         // Configuration
-        const TIME_THRESHOLDS = [10, 20, 30, 45, 60]; // minutes
+        const TIME_THRESHOLDS = [15, 30, 45, 60]; // minutes
 
         const MODE_LABELS = {
-            'drive': 'by car',
-            'transit': 'by public transport',
-            'bicycle': 'by bicycle',
-            'walk': 'on foot'
+            'driving': 'by car',
+            'public_transport': 'by public transport',
+            'cycling': 'by bicycle',
+            'walking': 'on foot'
         };
 
         // Color scale for isochrones
         const colors = {
-            10: "#ffffcc",
-            20: "#fed976",
-            30: "#fd8d3c",
-            45: "#fc4e2a",
-            60: "#bd0026"
+            15: "#ffffcc",
+            30: "#fed976",
+            45: "#fd8d3c",
+            60: "#e31a1c"
         };
 
         function getColorForTime(minutes) {
-            if (minutes <= 10) return colors[10];
-            if (minutes <= 20) return colors[20];
+            if (minutes <= 15) return colors[15];
             if (minutes <= 30) return colors[30];
             if (minutes <= 45) return colors[45];
             return colors[60];
@@ -363,45 +363,107 @@
 
         // State
         let currentOrigin = null;
-        let currentMode = 'drive';
-        let apiKey = localStorage.getItem('geoapify_api_key') || '';
+        let currentMode = 'driving';
+        let appId = localStorage.getItem('traveltime_app_id') || '';
+        let apiKey = localStorage.getItem('traveltime_api_key') || '';
+        let populationGrid = null;
 
         // DOM elements
         const loadingIndicator = document.getElementById('loadingIndicator');
+        const loadingText = document.getElementById('loadingText');
         const errorBox = document.getElementById('errorBox');
         const clickPrompt = document.getElementById('clickPrompt');
         const statsContainer = document.getElementById('statsContainer');
         const statsBody = document.getElementById('statsBody');
         const coordsDisplay = document.getElementById('coordsDisplay');
+        const appIdInput = document.getElementById('appIdInput');
         const apiKeyInput = document.getElementById('apiKeyInput');
         const apiStatus = document.getElementById('apiStatus');
+        const dataStatus = document.getElementById('dataStatus');
         const totalPopValue = document.getElementById('totalPopValue');
         const totalPopMode = document.getElementById('totalPopMode');
 
-        // Initialize API key display
-        function updateApiKeyStatus() {
-            if (apiKey) {
-                apiKeyInput.value = apiKey.substring(0, 8) + '...' + apiKey.substring(apiKey.length - 4);
-                apiStatus.textContent = 'API key configured ✓';
+        // Load population grid
+        async function loadPopulationGrid() {
+            dataStatus.textContent = 'Loading population data...';
+            dataStatus.className = 'data-status loading';
+
+            try {
+                const response = await fetch('uk_population_grid.json');
+                if (!response.ok) throw new Error('Failed to load population data');
+
+                populationGrid = await response.json();
+                console.log(`Loaded ${populationGrid.total_cells} population cells`);
+
+                dataStatus.textContent = `Population data loaded (${populationGrid.total_cells.toLocaleString()} cells, ${(populationGrid.total_population/1e6).toFixed(1)}M people)`;
+                dataStatus.className = 'data-status loaded';
+            } catch (error) {
+                console.error('Error loading population grid:', error);
+                dataStatus.textContent = 'Failed to load population data';
+                dataStatus.className = 'data-status error';
+            }
+        }
+
+        // Calculate population within a polygon using the grid
+        function calculatePopulation(polygon) {
+            if (!populationGrid) return 0;
+
+            let totalPop = 0;
+            const turfPolygon = turf.polygon(polygon.coordinates);
+
+            // Get bounding box to filter points
+            const bbox = turf.bbox(turfPolygon);
+
+            for (const point of populationGrid.points) {
+                const [lon, lat, pop] = point;
+
+                // Quick bounding box check first
+                if (lon < bbox[0] || lon > bbox[2] || lat < bbox[1] || lat > bbox[3]) {
+                    continue;
+                }
+
+                // Detailed point-in-polygon check
+                if (turf.booleanPointInPolygon([lon, lat], turfPolygon)) {
+                    totalPop += pop;
+                }
+            }
+
+            return Math.round(totalPop);
+        }
+
+        // Initialize credentials display
+        function updateCredentialsStatus() {
+            if (appId && apiKey) {
+                appIdInput.value = appId.substring(0, 8) + '...';
+                apiKeyInput.value = '••••••••';
+                apiStatus.textContent = 'API credentials configured ✓';
                 apiStatus.className = 'api-status connected';
             } else {
+                appIdInput.value = '';
                 apiKeyInput.value = '';
-                apiStatus.innerHTML = 'No API key set. <a href="https://www.geoapify.com/" target="_blank">Get free key</a>';
+                apiStatus.innerHTML = 'No credentials set. <a href="https://account.traveltime.com/" target="_blank">Get free API key</a>';
                 apiStatus.className = 'api-status missing';
             }
         }
 
-        function saveApiKey() {
-            const key = apiKeyInput.value.trim();
-            if (key && key.length > 20) {
-                apiKey = key;
-                localStorage.setItem('geoapify_api_key', key);
-                updateApiKeyStatus();
+        function saveCredentials() {
+            const newAppId = appIdInput.value.trim();
+            const newApiKey = apiKeyInput.value.trim();
 
-                // Re-fetch if we have a location selected
-                if (currentOrigin) {
-                    handleMapClick({ latlng: { lat: currentOrigin.lat, lng: currentOrigin.lon } });
-                }
+            if (newAppId && newAppId.length > 5 && !newAppId.includes('...')) {
+                appId = newAppId;
+                localStorage.setItem('traveltime_app_id', appId);
+            }
+            if (newApiKey && newApiKey.length > 5 && !newApiKey.includes('•')) {
+                apiKey = newApiKey;
+                localStorage.setItem('traveltime_api_key', apiKey);
+            }
+
+            updateCredentialsStatus();
+
+            // Re-fetch if we have a location selected
+            if (currentOrigin && appId && apiKey) {
+                handleMapClick({ latlng: { lat: currentOrigin.lat, lng: currentOrigin.lon } });
             }
         }
 
@@ -418,24 +480,43 @@
             });
         });
 
-        // Fetch isochrones from Geoapify API
+        // Fetch isochrones from TravelTime API
         async function fetchIsochrones(lat, lon, mode) {
-            if (!apiKey) {
-                throw new Error('Please enter your Geoapify API key first');
+            if (!appId || !apiKey) {
+                throw new Error('Please enter your TravelTime API credentials first');
             }
 
-            // Build ranges parameter (in seconds)
-            const ranges = TIME_THRESHOLDS.map(t => t * 60).join(',');
+            const departureTime = new Date().toISOString();
 
-            // Geoapify isoline API
-            const url = `https://api.geoapify.com/v1/isoline?lat=${lat}&lon=${lon}&type=time&mode=${mode}&range=${ranges}&apiKey=${apiKey}`;
+            // Build request for multiple time thresholds
+            const searches = TIME_THRESHOLDS.map((minutes, index) => ({
+                id: `isochrone_${minutes}`,
+                coords: { lat, lng: lon },
+                departure_time: departureTime,
+                travel_time: minutes * 60,
+                transportation: {
+                    type: mode
+                }
+            }));
 
-            const response = await fetch(url);
+            const requestBody = {
+                departure_searches: searches
+            };
+
+            const response = await fetch('https://api.traveltimeapp.com/v4/time-map', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Application-Id': appId,
+                    'X-Api-Key': apiKey
+                },
+                body: JSON.stringify(requestBody)
+            });
 
             if (!response.ok) {
                 const errorText = await response.text();
                 if (response.status === 401) {
-                    throw new Error('Invalid API key. Please check your Geoapify API key.');
+                    throw new Error('Invalid API credentials. Please check your TravelTime Application ID and API Key.');
                 }
                 throw new Error(`API error ${response.status}: ${errorText}`);
             }
@@ -444,67 +525,92 @@
         }
 
         // Display isochrones on map
-        function displayIsochrones(data) {
+        function displayIsochrones(data, lat, lon) {
             isochroneLayer.clearLayers();
 
-            if (!data || !data.features) return;
+            if (!data || !data.results) return;
 
             // Sort by time descending (draw largest first so smaller ones appear on top)
-            const features = [...data.features].sort((a, b) =>
-                b.properties.range - a.properties.range
-            );
+            const results = [...data.results].sort((a, b) => {
+                const timeA = parseInt(a.search_id.split('_')[1]);
+                const timeB = parseInt(b.search_id.split('_')[1]);
+                return timeB - timeA;
+            });
 
+            const stats = [];
             let maxPopulation = 0;
 
-            features.forEach(feature => {
-                const timeSeconds = feature.properties.range;
-                const timeMinutes = timeSeconds / 60;
+            results.forEach(result => {
+                const timeMinutes = parseInt(result.search_id.split('_')[1]);
                 const color = getColorForTime(timeMinutes);
 
-                // Get statistics
-                const areaKm2 = feature.properties.area ? (feature.properties.area / 1000000).toFixed(1) : 'N/A';
-                const population = feature.properties.population || 0;
+                result.shapes.forEach(shape => {
+                    // Convert TravelTime format to GeoJSON
+                    const coordinates = [shape.shell.map(coord => [coord.lng, coord.lat])];
 
-                if (timeMinutes === 60) {
-                    maxPopulation = population;
-                }
-
-                L.geoJSON(feature, {
-                    style: {
-                        fillColor: color,
-                        color: '#333',
-                        weight: 1,
-                        fillOpacity: 0.5
+                    // Add holes if present
+                    if (shape.holes) {
+                        shape.holes.forEach(hole => {
+                            coordinates.push(hole.map(coord => [coord.lng, coord.lat]));
+                        });
                     }
-                }).bindPopup(`
-                    <strong>${Math.round(timeMinutes)} minutes</strong><br>
-                    Population: ${population.toLocaleString()}<br>
-                    Area: ${areaKm2} km²
-                `).addTo(isochroneLayer);
+
+                    const geojson = {
+                        type: 'Feature',
+                        properties: { time: timeMinutes },
+                        geometry: {
+                            type: 'Polygon',
+                            coordinates: coordinates
+                        }
+                    };
+
+                    // Calculate area using Turf
+                    const areaKm2 = (turf.area(geojson) / 1000000).toFixed(1);
+
+                    // Calculate population
+                    loadingText.textContent = `Calculating population for ${timeMinutes} min...`;
+                    const population = calculatePopulation(geojson.geometry);
+
+                    if (timeMinutes === 60) {
+                        maxPopulation = population;
+                    }
+
+                    stats.push({ time: timeMinutes, population, area: areaKm2 });
+
+                    L.geoJSON(geojson, {
+                        style: {
+                            fillColor: color,
+                            color: '#333',
+                            weight: 1,
+                            fillOpacity: 0.5
+                        }
+                    }).bindPopup(`
+                        <strong>${timeMinutes} minutes</strong><br>
+                        Population: ${population.toLocaleString()}<br>
+                        Area: ${areaKm2} km²
+                    `).addTo(isochroneLayer);
+                });
             });
 
             // Update total population display
             totalPopValue.textContent = maxPopulation.toLocaleString();
             totalPopMode.textContent = MODE_LABELS[currentMode];
 
-            updateStats(features);
+            updateStats(stats);
         }
 
         // Update statistics table
-        function updateStats(features) {
-            const sorted = [...features].sort((a, b) => a.properties.range - b.properties.range);
+        function updateStats(stats) {
+            // Sort by time ascending
+            stats.sort((a, b) => a.time - b.time);
 
-            statsBody.innerHTML = sorted.map(f => {
-                const timeMin = f.properties.range / 60;
-                const areaKm2 = f.properties.area ? (f.properties.area / 1000000).toFixed(1) : 'N/A';
-                const population = f.properties.population || 0;
-
-                return `<tr>
-                    <td>${Math.round(timeMin)} min</td>
-                    <td class="population-highlight">${population.toLocaleString()}</td>
-                    <td>${areaKm2}</td>
-                </tr>`;
-            }).join('');
+            statsBody.innerHTML = stats.map(s => `
+                <tr>
+                    <td>${s.time} min</td>
+                    <td class="population-highlight">${s.population.toLocaleString()}</td>
+                    <td>${s.area}</td>
+                </tr>
+            `).join('');
         }
 
         // Show error message
@@ -521,6 +627,7 @@
 
             // Update UI
             coordsDisplay.innerHTML = `<strong>Selected:</strong> ${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+            loadingText.textContent = 'Fetching isochrones...';
             loadingIndicator.classList.add('active');
             errorBox.classList.remove('active');
             clickPrompt.style.display = 'none';
@@ -541,12 +648,12 @@
 
             try {
                 const data = await fetchIsochrones(lat, lng, currentMode);
-                displayIsochrones(data);
+                displayIsochrones(data, lat, lng);
                 statsContainer.style.display = 'block';
 
                 // Zoom to fit isochrones
-                if (data.features && data.features.length > 0) {
-                    const bounds = L.geoJSON(data).getBounds();
+                const bounds = isochroneLayer.getBounds();
+                if (bounds.isValid()) {
                     map.fitBounds(bounds, { padding: [20, 20] });
                 }
             } catch (error) {
@@ -562,15 +669,17 @@
         // Event listeners
         map.on('click', handleMapClick);
 
-        // Allow pressing Enter in API key input
+        // Allow pressing Enter in inputs
         apiKeyInput.addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') {
-                saveApiKey();
-            }
+            if (e.key === 'Enter') saveCredentials();
+        });
+        appIdInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') apiKeyInput.focus();
         });
 
         // Initialize
-        updateApiKeyStatus();
+        updateCredentialsStatus();
+        loadPopulationGrid();
     </script>
 </body>
 </html>
