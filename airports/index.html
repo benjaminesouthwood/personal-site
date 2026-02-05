@@ -515,6 +515,7 @@
             fetch('isochrones.json').then(r => r.json()),
             fetch('summary.json').then(r => r.json())
         ]).then(([isoData, sumData]) => {
+            console.log('Data loaded. Isochrone keys:', Object.keys(isoData));
             isochrones = isoData;
             summaryData = sumData;
             updateMap();
@@ -529,6 +530,9 @@
             const sourceFilter = document.getElementById('source-select').value;
             const modeFilter = document.getElementById('mode-select').value;
             const timeFilter = parseInt(document.getElementById('time-select').value);
+
+            console.log('Filters:', {airportFilter, sourceFilter, modeFilter, timeFilter});
+            let addedCount = 0;
 
             Object.entries(isochrones).forEach(([key, geojson]) => {
                 const parts = key.split('_');
@@ -556,6 +560,9 @@
                     type: 'FeatureCollection',
                     features: filteredFeatures
                 };
+
+                console.log('Adding isochrone:', key, 'features:', filteredFeatures.length);
+                addedCount++;
 
                 L.geoJSON(filteredGeojson, {
                     style: {
@@ -585,6 +592,8 @@
 
             // Bring markers to front
             markerLayer.bringToFront();
+
+            console.log('Total isochrones added:', addedCount);
 
             // Update table highlighting
             updateTableHighlighting();
