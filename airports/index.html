@@ -21,7 +21,7 @@
         }
 
         .container {
-            max-width: 1400px;
+            max-width: 1600px;
             margin: 0 auto;
             padding: 20px;
         }
@@ -29,28 +29,92 @@
         header {
             background: #2c3e50;
             color: white;
-            padding: 30px 20px;
+            padding: 20px;
             margin-bottom: 20px;
         }
 
         header h1 {
-            font-size: 2rem;
-            margin-bottom: 10px;
+            font-size: 1.8rem;
+            margin-bottom: 5px;
         }
 
         header p {
             opacity: 0.8;
-            font-size: 1.1rem;
+            font-size: 1rem;
         }
 
-        .content {
+        .main-content {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .map-section {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .section-header {
+            background: #34495e;
+            color: white;
+            padding: 12px 20px;
+            font-weight: 600;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        #map {
+            height: 600px;
+            width: 100%;
+        }
+
+        .controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .control-group {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .control-group label {
+            font-size: 0.85rem;
+            font-weight: 500;
+            opacity: 0.9;
+        }
+
+        select {
+            padding: 6px 10px;
+            border: 1px solid rgba(255,255,255,0.3);
+            border-radius: 4px;
+            font-size: 0.9rem;
+            background: rgba(255,255,255,0.1);
+            color: white;
+            cursor: pointer;
+        }
+
+        select option {
+            background: #34495e;
+            color: white;
+        }
+
+        .bottom-section {
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: 20px;
         }
 
         @media (max-width: 1000px) {
-            .content {
+            .bottom-section {
                 grid-template-columns: 1fr;
             }
         }
@@ -65,53 +129,23 @@
         .card-header {
             background: #34495e;
             color: white;
-            padding: 15px 20px;
+            padding: 12px 20px;
             font-weight: 600;
         }
 
         .card-body {
-            padding: 20px;
-        }
-
-        #map {
-            height: 500px;
-            width: 100%;
-        }
-
-        .controls {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 15px;
-            margin-bottom: 15px;
-        }
-
-        .control-group {
-            display: flex;
-            flex-direction: column;
-            gap: 5px;
-        }
-
-        .control-group label {
-            font-size: 0.85rem;
-            font-weight: 600;
-            color: #666;
-        }
-
-        select {
-            padding: 8px 12px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            font-size: 0.95rem;
-            min-width: 150px;
+            padding: 15px;
+            overflow-x: auto;
         }
 
         table {
             width: 100%;
             border-collapse: collapse;
+            font-size: 0.9rem;
         }
 
         th, td {
-            padding: 12px 15px;
+            padding: 10px 12px;
             text-align: left;
             border-bottom: 1px solid #eee;
         }
@@ -119,7 +153,7 @@
         th {
             background: #f8f9fa;
             font-weight: 600;
-            font-size: 0.85rem;
+            font-size: 0.8rem;
             text-transform: uppercase;
             color: #666;
         }
@@ -129,7 +163,7 @@
         }
 
         tr.highlighted {
-            background: #e8f4f8;
+            background: #e3f2fd;
         }
 
         .numeric {
@@ -139,75 +173,81 @@
 
         .legend {
             background: white;
-            padding: 10px 15px;
-            border-radius: 4px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+            padding: 12px 15px;
+            border-radius: 6px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+            max-width: 200px;
         }
 
         .legend h4 {
-            margin-bottom: 8px;
+            margin-bottom: 10px;
             font-size: 0.9rem;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 8px;
         }
 
         .legend-item {
             display: flex;
             align-items: center;
-            gap: 8px;
-            margin-bottom: 4px;
+            gap: 10px;
+            margin-bottom: 6px;
             font-size: 0.85rem;
         }
 
         .legend-color {
-            width: 20px;
-            height: 12px;
-            border-radius: 2px;
+            width: 24px;
+            height: 14px;
+            border-radius: 3px;
+            border: 1px solid rgba(0,0,0,0.1);
         }
 
-        .summary-grid {
+        .stats-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 15px;
-            margin-bottom: 20px;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+            margin-bottom: 10px;
         }
 
-        .summary-stat {
+        .stat-box {
             background: #f8f9fa;
-            padding: 15px;
+            padding: 12px;
             border-radius: 6px;
             text-align: center;
         }
 
-        .summary-stat .value {
-            font-size: 1.8rem;
+        .stat-box .airport {
             font-weight: 700;
+            font-size: 1.1rem;
+            margin-bottom: 4px;
+        }
+
+        .stat-box .value {
+            font-size: 0.9rem;
+            color: #666;
+        }
+
+        .stat-box .value strong {
             color: #2c3e50;
         }
 
-        .summary-stat .label {
-            font-size: 0.85rem;
-            color: #666;
-        }
-
-        .source-badge {
-            display: inline-block;
-            padding: 2px 8px;
-            border-radius: 12px;
-            font-size: 0.75rem;
-            font-weight: 600;
-        }
-
-        .source-ors { background: #3498db; color: white; }
-        .source-tt { background: #9b59b6; color: white; }
-
         footer {
             text-align: center;
-            padding: 30px;
+            padding: 20px;
             color: #666;
-            font-size: 0.9rem;
+            font-size: 0.85rem;
         }
 
         footer a {
             color: #3498db;
+        }
+
+        .note {
+            background: #fff3cd;
+            border: 1px solid #ffc107;
+            border-radius: 4px;
+            padding: 10px 15px;
+            margin-bottom: 15px;
+            font-size: 0.85rem;
         }
     </style>
 </head>
@@ -220,67 +260,80 @@
     </header>
 
     <div class="container">
-        <div class="content">
-            <div class="card">
-                <div class="card-header">Interactive Map</div>
-                <div class="card-body">
+        <div class="main-content">
+            <div class="map-section">
+                <div class="section-header">
+                    <span>Isochrone Map</span>
                     <div class="controls">
                         <div class="control-group">
-                            <label>Airport</label>
+                            <label>Airport:</label>
                             <select id="airport-select">
-                                <option value="all">All Airports</option>
-                                <option value="LHR">London Heathrow</option>
-                                <option value="MAN">Manchester</option>
-                                <option value="CDG">Paris CDG</option>
-                                <option value="AMS">Amsterdam Schiphol</option>
+                                <option value="all">All</option>
+                                <option value="LHR">LHR</option>
+                                <option value="MAN">MAN</option>
+                                <option value="CDG">CDG</option>
+                                <option value="AMS">AMS</option>
                             </select>
                         </div>
                         <div class="control-group">
-                            <label>Data Source</label>
+                            <label>Source:</label>
                             <select id="source-select">
-                                <option value="all">All Sources</option>
-                                <option value="ors">OpenRouteService</option>
+                                <option value="ors" selected>OpenRouteService</option>
                                 <option value="tt">TravelTime</option>
+                                <option value="all">Both</option>
                             </select>
                         </div>
                         <div class="control-group">
-                            <label>Transport Mode</label>
+                            <label>Mode:</label>
                             <select id="mode-select">
-                                <option value="all">All Modes</option>
-                                <option value="driving">Driving</option>
-                                <option value="transit">Public Transit</option>
+                                <option value="driving" selected>Driving</option>
+                                <option value="transit">Transit</option>
+                                <option value="all">Both</option>
                             </select>
                         </div>
                         <div class="control-group">
-                            <label>Time (minutes)</label>
+                            <label>Time:</label>
                             <select id="time-select">
-                                <option value="60">60 min</option>
+                                <option value="60" selected>60 min</option>
                                 <option value="45">45 min</option>
                                 <option value="30">30 min</option>
                                 <option value="15">15 min</option>
                             </select>
                         </div>
                     </div>
-                    <div id="map"></div>
                 </div>
+                <div id="map"></div>
             </div>
 
-            <div class="card">
-                <div class="card-header">Comparison Table (60-minute isochrones)</div>
-                <div class="card-body">
-                    <table id="comparison-table">
-                        <thead>
-                            <tr>
-                                <th>Code</th>
-                                <th>Airport</th>
-                                <th>Source</th>
-                                <th>Mode</th>
-                                <th class="numeric">Population</th>
-                                <th class="numeric">GDP</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            
+            <div class="bottom-section">
+                <div class="card">
+                    <div class="card-header">60-Minute Driving Comparison (ORS)</div>
+                    <div class="card-body">
+                        <div class="stats-grid" id="stats-grid">
+                            <!-- Populated by JS -->
+                        </div>
+                        <div class="note">
+                            <strong>Note:</strong> UK GDP estimated from regional productivity model.
+                            MAN transit shows minimal coverage due to limited TravelTime data for that area.
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">Full Comparison Table</div>
+                    <div class="card-body">
+                        <table id="comparison-table">
+                            <thead>
+                                <tr>
+                                    <th>Airport</th>
+                                    <th>Source</th>
+                                    <th>Mode</th>
+                                    <th class="numeric">Population</th>
+                                    <th class="numeric">GDP</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                
         <tr data-airport="AMS" data-source="ors" data-mode="driving">
             <td><strong>AMS</strong></td>
             <td>Amsterdam Schiphol</td>
@@ -341,7 +394,7 @@
             <td>ors</td>
             <td>Driving</td>
             <td class="numeric">11.75M</td>
-            <td class="numeric">—</td>
+            <td class="numeric">€473.1bn</td>
         </tr>
         
         <tr data-airport="LHR" data-source="tt" data-mode="driving">
@@ -350,7 +403,7 @@
             <td>tt</td>
             <td>Driving</td>
             <td class="numeric">9.35M</td>
-            <td class="numeric">—</td>
+            <td class="numeric">€373.1bn</td>
         </tr>
         
         <tr data-airport="LHR" data-source="tt" data-mode="transit">
@@ -359,7 +412,7 @@
             <td>tt</td>
             <td>Transit</td>
             <td class="numeric">1.94M</td>
-            <td class="numeric">—</td>
+            <td class="numeric">€99.0bn</td>
         </tr>
         
         <tr data-airport="MAN" data-source="ors" data-mode="driving">
@@ -368,7 +421,7 @@
             <td>ors</td>
             <td>Driving</td>
             <td class="numeric">8.28M</td>
-            <td class="numeric">—</td>
+            <td class="numeric">€250.3bn</td>
         </tr>
         
         <tr data-airport="MAN" data-source="tt" data-mode="driving">
@@ -377,7 +430,7 @@
             <td>tt</td>
             <td>Driving</td>
             <td class="numeric">4.84M</td>
-            <td class="numeric">—</td>
+            <td class="numeric">€123.7bn</td>
         </tr>
         
         <tr data-airport="MAN" data-source="tt" data-mode="transit">
@@ -386,20 +439,21 @@
             <td>tt</td>
             <td>Transit</td>
             <td class="numeric">0.00M</td>
-            <td class="numeric">—</td>
+            <td class="numeric">€0.0bn</td>
         </tr>
         
-                        </tbody>
-                    </table>
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 
     <footer>
-        <p>Data sources: <a href="https://openrouteservice.org/">OpenRouteService</a>,
-        <a href="https://traveltime.com/">TravelTime</a>,
-        <a href="https://www.worldpop.org/">WorldPop</a>,
+        <p>Data: <a href="https://openrouteservice.org/">OpenRouteService</a> |
+        <a href="https://traveltime.com/">TravelTime</a> |
+        <a href="https://www.worldpop.org/">WorldPop</a> |
         <a href="https://ec.europa.eu/eurostat/">Eurostat</a></p>
         <p>Built with Claude Code</p>
     </footer>
@@ -413,6 +467,13 @@
             'AMS': '#f39c12'
         };
 
+        const airportNames = {
+            'LHR': 'London Heathrow',
+            'MAN': 'Manchester',
+            'CDG': 'Paris CDG',
+            'AMS': 'Amsterdam Schiphol'
+        };
+
         // Airport coordinates
         const airportCoords = {
             'LHR': [51.4700, -0.4543],
@@ -421,40 +482,44 @@
             'AMS': [52.3105, 4.7639]
         };
 
-        // Initialize map
-        const map = L.map('map').setView([51.0, 2.0], 6);
+        // Initialize map centered on Western Europe
+        const map = L.map('map').setView([51.0, 1.0], 6);
 
         L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
-            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+            attribution: '&copy; OpenStreetMap &copy; CARTO',
             subdomains: 'abcd',
-            maxZoom: 20
+            maxZoom: 18
         }).addTo(map);
-
-        // Add airport markers
-        Object.entries(airportCoords).forEach(([code, coords]) => {
-            L.circleMarker(coords, {
-                radius: 8,
-                fillColor: airportColors[code],
-                color: '#fff',
-                weight: 2,
-                opacity: 1,
-                fillOpacity: 0.8
-            }).addTo(map).bindPopup(`<strong>${code}</strong>`);
-        });
 
         // Layer group for isochrones
         let isochroneLayer = L.layerGroup().addTo(map);
 
+        // Add airport markers on top
+        const markerLayer = L.layerGroup().addTo(map);
+        Object.entries(airportCoords).forEach(([code, coords]) => {
+            L.circleMarker(coords, {
+                radius: 10,
+                fillColor: airportColors[code],
+                color: '#fff',
+                weight: 3,
+                opacity: 1,
+                fillOpacity: 0.9
+            }).addTo(markerLayer).bindPopup(`<strong>${code}</strong><br>${airportNames[code]}`);
+        });
+
         // Load isochrone data
         let isochrones = {};
+        let summaryData = {};
 
-        fetch('isochrones.json')
-            .then(response => response.json())
-            .then(data => {
-                isochrones = data;
-                updateMap();
-            })
-            .catch(err => console.error('Error loading isochrones:', err));
+        Promise.all([
+            fetch('isochrones.json').then(r => r.json()),
+            fetch('summary.json').then(r => r.json())
+        ]).then(([isoData, sumData]) => {
+            isochrones = isoData;
+            summaryData = sumData;
+            updateMap();
+            updateStats();
+        }).catch(err => console.error('Error loading data:', err));
 
         // Update map based on filters
         function updateMap() {
@@ -474,12 +539,16 @@
                 // Apply filters
                 if (airportFilter !== 'all' && airport !== airportFilter) return;
                 if (sourceFilter !== 'all' && source !== sourceFilter) return;
-                if (modeFilter !== 'all' && !mode.includes(modeFilter.replace('transit', 'transit'))) return;
+                if (modeFilter !== 'all') {
+                    if (modeFilter === 'driving' && mode !== 'driving') return;
+                    if (modeFilter === 'transit' && !mode.includes('transit')) return;
+                }
 
                 // Filter features by time
-                const filteredFeatures = geojson.features.filter(f =>
-                    f.properties.time_minutes === timeFilter
-                );
+                const filteredFeatures = geojson.features.filter(f => {
+                    const t = f.properties.time_minutes;
+                    return Math.abs(t - timeFilter) < 1;
+                });
 
                 if (filteredFeatures.length === 0) return;
 
@@ -492,9 +561,9 @@
                     style: {
                         color: airportColors[airport],
                         weight: 2,
-                        opacity: 0.8,
+                        opacity: 0.9,
                         fillColor: airportColors[airport],
-                        fillOpacity: 0.15
+                        fillOpacity: 0.2
                     },
                     onEachFeature: (feature, layer) => {
                         const props = feature.properties;
@@ -504,17 +573,45 @@
                             '€' + props.gdp_bn_eur.toFixed(1) + 'bn' : '—';
 
                         layer.bindPopup(`
-                            <strong>${airport}</strong> (${source}, ${mode})<br>
-                            Time: ${props.time_minutes} min<br>
-                            Population: ${pop}<br>
-                            GDP: ${gdp}
+                            <strong>${airport}</strong> - ${airportNames[airport]}<br>
+                            <em>${source === 'ors' ? 'OpenRouteService' : 'TravelTime'} / ${mode}</em><br><br>
+                            <strong>Time:</strong> ${props.time_minutes} min<br>
+                            <strong>Population:</strong> ${pop}<br>
+                            <strong>GDP:</strong> ${gdp}
                         `);
                     }
                 }).addTo(isochroneLayer);
             });
 
+            // Bring markers to front
+            markerLayer.bringToFront();
+
             // Update table highlighting
             updateTableHighlighting();
+        }
+
+        function updateStats() {
+            const statsGrid = document.getElementById('stats-grid');
+            const airports = ['CDG', 'LHR', 'MAN', 'AMS'];
+
+            let html = '';
+            airports.forEach(code => {
+                const isos = summaryData.airports[code]?.isochrones?.ors_driving || [];
+                const iso60 = isos.find(i => Math.abs(i.time_minutes - 60) < 1);
+
+                const pop = iso60?.population_millions?.toFixed(1) || '—';
+                const gdp = iso60?.gdp_bn_eur?.toFixed(0) || '—';
+
+                html += `
+                    <div class="stat-box" style="border-left: 4px solid ${airportColors[code]}">
+                        <div class="airport">${code}</div>
+                        <div class="value"><strong>${pop}M</strong> pop</div>
+                        <div class="value"><strong>€${gdp}bn</strong> GDP</div>
+                    </div>
+                `;
+            });
+
+            statsGrid.innerHTML = html;
         }
 
         function updateTableHighlighting() {
@@ -529,7 +626,9 @@
 
                 const matchAirport = airportFilter === 'all' || airport === airportFilter;
                 const matchSource = sourceFilter === 'all' || source === sourceFilter;
-                const matchMode = modeFilter === 'all' || mode.includes(modeFilter.replace('transit', 'transit'));
+                const matchMode = modeFilter === 'all' ||
+                    (modeFilter === 'driving' && mode === 'driving') ||
+                    (modeFilter === 'transit' && mode.includes('transit'));
 
                 if (matchAirport && matchSource && matchMode) {
                     row.classList.add('highlighted');
@@ -552,20 +651,20 @@
             div.innerHTML = `
                 <h4>Airports</h4>
                 <div class="legend-item">
+                    <div class="legend-color" style="background: ${airportColors.CDG}"></div>
+                    <span>CDG - Paris</span>
+                </div>
+                <div class="legend-item">
                     <div class="legend-color" style="background: ${airportColors.LHR}"></div>
-                    <span>LHR - London Heathrow</span>
+                    <span>LHR - London</span>
                 </div>
                 <div class="legend-item">
                     <div class="legend-color" style="background: ${airportColors.MAN}"></div>
                     <span>MAN - Manchester</span>
                 </div>
                 <div class="legend-item">
-                    <div class="legend-color" style="background: ${airportColors.CDG}"></div>
-                    <span>CDG - Paris CDG</span>
-                </div>
-                <div class="legend-item">
                     <div class="legend-color" style="background: ${airportColors.AMS}"></div>
-                    <span>AMS - Amsterdam Schiphol</span>
+                    <span>AMS - Amsterdam</span>
                 </div>
             `;
             return div;
