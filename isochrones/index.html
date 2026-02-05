@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Click Anywhere Isochrones - UK Travel Time Map</title>
+    <title>Travel Time Isochrones - Population Reachable</title>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -9,13 +9,13 @@
     <style>
         * { box-sizing: border-box; }
         body { margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
-        #map { position: absolute; top: 0; bottom: 0; left: 0; right: 340px; }
+        #map { position: absolute; top: 0; bottom: 0; left: 0; right: 360px; }
         #sidebar {
             position: absolute;
             top: 0;
             bottom: 0;
             right: 0;
-            width: 340px;
+            width: 360px;
             background: #f8f9fa;
             padding: 20px;
             overflow-y: auto;
@@ -92,14 +92,18 @@
             padding: 10px;
             text-align: left;
         }
-        .stats-table th:last-child { text-align: right; }
+        .stats-table th:nth-child(2), .stats-table th:nth-child(3) { text-align: right; }
         .stats-table td {
             padding: 10px;
             border-bottom: 1px solid #eee;
         }
-        .stats-table td:last-child { text-align: right; font-weight: 500; }
+        .stats-table td:nth-child(2), .stats-table td:nth-child(3) { text-align: right; font-weight: 500; }
         .stats-table tr:last-child td { border-bottom: none; }
         .stats-table tr:nth-child(even) { background: #f8f9fa; }
+        .population-highlight {
+            color: #2E86AB;
+            font-weight: 600;
+        }
         .legend {
             background: white;
             padding: 12px;
@@ -134,6 +138,10 @@
             background: #fff3e0;
             color: #e65100;
         }
+        .info-box.setup {
+            background: #fce4ec;
+            color: #c2185b;
+        }
         .click-prompt {
             text-align: center;
             padding: 30px 20px;
@@ -158,54 +166,102 @@
             display: none;
         }
         .error-box.active { display: block; }
-        .slider-container { margin-top: 15px; }
-        .slider-label {
+        .api-key-input {
             display: flex;
-            justify-content: space-between;
-            margin-bottom: 8px;
-            font-size: 11px;
-            color: #888;
+            gap: 8px;
+            margin-top: 8px;
         }
-        .current-mode {
-            text-align: center;
-            font-size: 14px;
-            font-weight: 600;
-            color: #4CAF50;
-            margin-bottom: 8px;
+        .api-key-input input {
+            flex: 1;
         }
-        input[type="range"] {
-            width: 100%;
-            height: 6px;
-            -webkit-appearance: none;
-            background: linear-gradient(to right, #4CAF50, #FF9800);
-            border-radius: 3px;
-            outline: none;
-        }
-        input[type="range"]::-webkit-slider-thumb {
-            -webkit-appearance: none;
-            width: 18px;
-            height: 18px;
-            background: white;
-            border: 2px solid #333;
-            border-radius: 50%;
+        .api-key-input button {
+            padding: 10px 16px;
+            background: #2E86AB;
+            color: white;
+            border: none;
+            border-radius: 6px;
             cursor: pointer;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+            font-size: 13px;
+            white-space: nowrap;
         }
+        .api-key-input button:hover { background: #236b8a; }
+        .api-status {
+            font-size: 11px;
+            margin-top: 8px;
+            padding: 6px 10px;
+            border-radius: 4px;
+        }
+        .api-status.connected { background: #e8f5e9; color: #2e7d32; }
+        .api-status.missing { background: #ffebee; color: #c62828; }
+        .mode-pills {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+            margin-top: 8px;
+        }
+        .mode-pill {
+            padding: 8px 12px;
+            border: 2px solid #ddd;
+            border-radius: 20px;
+            font-size: 12px;
+            cursor: pointer;
+            background: white;
+            transition: all 0.2s;
+        }
+        .mode-pill:hover { border-color: #2E86AB; }
+        .mode-pill.active {
+            background: #2E86AB;
+            color: white;
+            border-color: #2E86AB;
+        }
+        .mode-pill .icon { margin-right: 4px; }
+        .total-pop {
+            background: linear-gradient(135deg, #2E86AB 0%, #1a5276 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+            margin-bottom: 15px;
+            box-shadow: 0 2px 8px rgba(46,134,171,0.3);
+        }
+        .total-pop .label { font-size: 12px; opacity: 0.9; margin-bottom: 5px; }
+        .total-pop .value { font-size: 28px; font-weight: 700; }
+        .total-pop .subtext { font-size: 11px; opacity: 0.8; margin-top: 5px; }
     </style>
 </head>
 <body>
     <div id="map"></div>
     <div id="sidebar">
         <h2>Travel Time Isochrones</h2>
-        <p class="subtitle">Click anywhere on the map to see how far you can travel</p>
+        <p class="subtitle">Click anywhere to see reachable population</p>
+
+        <div class="control-group">
+            <label class="control-label">Geoapify API Key</label>
+            <div class="api-key-input">
+                <input type="text" id="apiKeyInput" placeholder="Enter your API key">
+                <button onclick="saveApiKey()">Save</button>
+            </div>
+            <div class="api-status missing" id="apiStatus">
+                No API key set. <a href="https://www.geoapify.com/" target="_blank">Get free key</a>
+            </div>
+        </div>
 
         <div class="control-group">
             <label class="control-label">Transport Mode</label>
-            <select id="modeSelect">
-                <option value="driving-car">Driving</option>
-                <option value="cycling-regular">Cycling</option>
-                <option value="foot-walking">Walking</option>
-            </select>
+            <div class="mode-pills" id="modePills">
+                <div class="mode-pill active" data-mode="drive">
+                    <span class="icon">🚗</span>Drive
+                </div>
+                <div class="mode-pill" data-mode="transit">
+                    <span class="icon">🚇</span>Transit
+                </div>
+                <div class="mode-pill" data-mode="bicycle">
+                    <span class="icon">🚴</span>Cycle
+                </div>
+                <div class="mode-pill" data-mode="walk">
+                    <span class="icon">🚶</span>Walk
+                </div>
+            </div>
             <div class="coords-display" id="coordsDisplay">
                 Click on the map to select a location
             </div>
@@ -223,30 +279,28 @@
                 <svg viewBox="0 0 24 24" fill="currentColor">
                     <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
                 </svg>
-                <p>Click anywhere on the map to generate travel time isochrones</p>
+                <p>Click anywhere on the map to generate travel time isochrones with population data</p>
             </div>
 
             <div id="statsContainer" style="display: none;">
-                <h3>Area Reachable</h3>
+                <div class="total-pop" id="totalPopBox">
+                    <div class="label">Population reachable in 60 min</div>
+                    <div class="value" id="totalPopValue">-</div>
+                    <div class="subtext" id="totalPopMode">by car</div>
+                </div>
+
+                <h3>Breakdown by Travel Time</h3>
                 <table class="stats-table">
                     <thead>
                         <tr>
-                            <th>Travel Time</th>
+                            <th>Time</th>
+                            <th>Population</th>
                             <th>Area (km²)</th>
                         </tr>
                     </thead>
                     <tbody id="statsBody">
                     </tbody>
                 </table>
-
-                <div class="control-group slider-container">
-                    <div class="current-mode" id="currentMode">Off-Peak</div>
-                    <div class="slider-label">
-                        <span>Off-Peak</span>
-                        <span>Peak (+40%)</span>
-                    </div>
-                    <input type="range" id="peakSlider" min="0" max="100" value="0">
-                </div>
             </div>
         </div>
 
@@ -255,25 +309,29 @@
             <div class="legend-item"><div class="legend-color" style="background: #ffffcc;"></div>0-10 minutes</div>
             <div class="legend-item"><div class="legend-color" style="background: #fed976;"></div>10-20 minutes</div>
             <div class="legend-item"><div class="legend-color" style="background: #fd8d3c;"></div>20-30 minutes</div>
-            <div class="legend-item"><div class="legend-color" style="background: #fc4e2a;"></div>30-40 minutes</div>
-            <div class="legend-item"><div class="legend-color" style="background: #bd0026;"></div>40-50 minutes</div>
-            <div class="legend-item"><div class="legend-color" style="background: #67001f;"></div>50-60 minutes</div>
+            <div class="legend-item"><div class="legend-color" style="background: #fc4e2a;"></div>30-45 minutes</div>
+            <div class="legend-item"><div class="legend-color" style="background: #bd0026;"></div>45-60 minutes</div>
         </div>
 
         <div class="info-box">
-            <strong>How it works:</strong> Click any location to see isochrones showing how far you can travel in 10, 20, 30, 45, and 60 minutes. Uses OpenRouteService routing data.
+            <strong>Data sources:</strong> Routing via Geoapify (OpenStreetMap data). Population from WorldPop/GHSL estimates.
         </div>
 
         <div class="info-box warning">
-            <strong>Note:</strong> Each click makes an API request which takes 2-5 seconds. Peak time estimates assume 40% longer journey times.
+            <strong>Note:</strong> Transit isochrones use scheduled public transport data. Results vary by time of day.
         </div>
     </div>
 
     <script>
         // Configuration
-        const ORS_API_KEY = 'eyJvcmciOiI1YjNjZTM1OTc4NTExMTAwMDFjZjYyNDgiLCJpZCI6IjY5MmQ0NjM0YjlmNjQ1MDZhMDAwNTRkODI5MDY4MWQ2IiwiaCI6Im11cm11cjY0In0=';
         const TIME_THRESHOLDS = [10, 20, 30, 45, 60]; // minutes
-        const PEAK_FACTOR = 1.4; // 40% longer in peak times
+
+        const MODE_LABELS = {
+            'drive': 'by car',
+            'transit': 'by public transport',
+            'bicycle': 'by bicycle',
+            'walk': 'on foot'
+        };
 
         // Color scale for isochrones
         const colors = {
@@ -281,8 +339,7 @@
             20: "#fed976",
             30: "#fd8d3c",
             45: "#fc4e2a",
-            50: "#bd0026",
-            60: "#67001f"
+            60: "#bd0026"
         };
 
         function getColorForTime(minutes) {
@@ -290,7 +347,6 @@
             if (minutes <= 20) return colors[20];
             if (minutes <= 30) return colors[30];
             if (minutes <= 45) return colors[45];
-            if (minutes <= 50) return colors[50];
             return colors[60];
         }
 
@@ -306,9 +362,9 @@
         let markerLayer = L.layerGroup().addTo(map);
 
         // State
-        let currentIsochrones = null;
         let currentOrigin = null;
-        let currentPeakPercent = 0;
+        let currentMode = 'drive';
+        let apiKey = localStorage.getItem('geoapify_api_key') || '';
 
         // DOM elements
         const loadingIndicator = document.getElementById('loadingIndicator');
@@ -317,32 +373,70 @@
         const statsContainer = document.getElementById('statsContainer');
         const statsBody = document.getElementById('statsBody');
         const coordsDisplay = document.getElementById('coordsDisplay');
-        const modeSelect = document.getElementById('modeSelect');
-        const peakSlider = document.getElementById('peakSlider');
-        const currentModeLabel = document.getElementById('currentMode');
+        const apiKeyInput = document.getElementById('apiKeyInput');
+        const apiStatus = document.getElementById('apiStatus');
+        const totalPopValue = document.getElementById('totalPopValue');
+        const totalPopMode = document.getElementById('totalPopMode');
 
-        // Fetch isochrones from ORS API
-        async function fetchIsochrones(lat, lon, profile) {
-            const url = `https://api.openrouteservice.org/v2/isochrones/${profile}`;
+        // Initialize API key display
+        function updateApiKeyStatus() {
+            if (apiKey) {
+                apiKeyInput.value = apiKey.substring(0, 8) + '...' + apiKey.substring(apiKey.length - 4);
+                apiStatus.textContent = 'API key configured ✓';
+                apiStatus.className = 'api-status connected';
+            } else {
+                apiKeyInput.value = '';
+                apiStatus.innerHTML = 'No API key set. <a href="https://www.geoapify.com/" target="_blank">Get free key</a>';
+                apiStatus.className = 'api-status missing';
+            }
+        }
 
-            const body = {
-                locations: [[lon, lat]],
-                range: TIME_THRESHOLDS.map(t => t * 60), // Convert to seconds
-                range_type: "time",
-                attributes: ["area", "total_pop"]
-            };
+        function saveApiKey() {
+            const key = apiKeyInput.value.trim();
+            if (key && key.length > 20) {
+                apiKey = key;
+                localStorage.setItem('geoapify_api_key', key);
+                updateApiKeyStatus();
 
-            const response = await fetch(url, {
-                method: 'POST',
-                headers: {
-                    'Authorization': ORS_API_KEY,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(body)
+                // Re-fetch if we have a location selected
+                if (currentOrigin) {
+                    handleMapClick({ latlng: { lat: currentOrigin.lat, lng: currentOrigin.lon } });
+                }
+            }
+        }
+
+        // Mode selection
+        document.querySelectorAll('.mode-pill').forEach(pill => {
+            pill.addEventListener('click', function() {
+                document.querySelectorAll('.mode-pill').forEach(p => p.classList.remove('active'));
+                this.classList.add('active');
+                currentMode = this.dataset.mode;
+
+                if (currentOrigin) {
+                    handleMapClick({ latlng: { lat: currentOrigin.lat, lng: currentOrigin.lon } });
+                }
             });
+        });
+
+        // Fetch isochrones from Geoapify API
+        async function fetchIsochrones(lat, lon, mode) {
+            if (!apiKey) {
+                throw new Error('Please enter your Geoapify API key first');
+            }
+
+            // Build ranges parameter (in seconds)
+            const ranges = TIME_THRESHOLDS.map(t => t * 60).join(',');
+
+            // Geoapify isoline API
+            const url = `https://api.geoapify.com/v1/isoline?lat=${lat}&lon=${lon}&type=time&mode=${mode}&range=${ranges}&apiKey=${apiKey}`;
+
+            const response = await fetch(url);
 
             if (!response.ok) {
                 const errorText = await response.text();
+                if (response.status === 401) {
+                    throw new Error('Invalid API key. Please check your Geoapify API key.');
+                }
                 throw new Error(`API error ${response.status}: ${errorText}`);
             }
 
@@ -350,24 +444,30 @@
         }
 
         // Display isochrones on map
-        function displayIsochrones(data, peakPercent = 0) {
+        function displayIsochrones(data) {
             isochroneLayer.clearLayers();
 
             if (!data || !data.features) return;
 
-            // Sort by time descending (draw largest first)
+            // Sort by time descending (draw largest first so smaller ones appear on top)
             const features = [...data.features].sort((a, b) =>
-                b.properties.value - a.properties.value
+                b.properties.range - a.properties.range
             );
 
-            const effectiveFactor = 1 + (PEAK_FACTOR - 1) * (peakPercent / 100);
+            let maxPopulation = 0;
 
             features.forEach(feature => {
-                const timeSeconds = feature.properties.value;
+                const timeSeconds = feature.properties.range;
                 const timeMinutes = timeSeconds / 60;
-                const effectiveTime = timeMinutes * effectiveFactor;
                 const color = getColorForTime(timeMinutes);
+
+                // Get statistics
                 const areaKm2 = feature.properties.area ? (feature.properties.area / 1000000).toFixed(1) : 'N/A';
+                const population = feature.properties.population || 0;
+
+                if (timeMinutes === 60) {
+                    maxPopulation = population;
+                }
 
                 L.geoJSON(feature, {
                     style: {
@@ -377,43 +477,34 @@
                         fillOpacity: 0.5
                     }
                 }).bindPopup(`
-                    <strong>${Math.round(effectiveTime)} minutes</strong><br>
+                    <strong>${Math.round(timeMinutes)} minutes</strong><br>
+                    Population: ${population.toLocaleString()}<br>
                     Area: ${areaKm2} km²
                 `).addTo(isochroneLayer);
             });
 
-            updateStats(features, effectiveFactor);
+            // Update total population display
+            totalPopValue.textContent = maxPopulation.toLocaleString();
+            totalPopMode.textContent = MODE_LABELS[currentMode];
+
+            updateStats(features);
         }
 
         // Update statistics table
-        function updateStats(features, factor) {
-            const sorted = [...features].sort((a, b) => a.properties.value - b.properties.value);
+        function updateStats(features) {
+            const sorted = [...features].sort((a, b) => a.properties.range - b.properties.range);
 
             statsBody.innerHTML = sorted.map(f => {
-                const timeMin = f.properties.value / 60;
-                const effectiveTime = Math.round(timeMin * factor);
+                const timeMin = f.properties.range / 60;
                 const areaKm2 = f.properties.area ? (f.properties.area / 1000000).toFixed(1) : 'N/A';
+                const population = f.properties.population || 0;
 
                 return `<tr>
-                    <td>${effectiveTime} min</td>
+                    <td>${Math.round(timeMin)} min</td>
+                    <td class="population-highlight">${population.toLocaleString()}</td>
                     <td>${areaKm2}</td>
                 </tr>`;
             }).join('');
-        }
-
-        // Update mode label
-        function updateModeLabel() {
-            if (currentPeakPercent === 0) {
-                currentModeLabel.textContent = 'Off-Peak';
-                currentModeLabel.style.color = '#4CAF50';
-            } else if (currentPeakPercent === 100) {
-                currentModeLabel.textContent = 'Peak (+40%)';
-                currentModeLabel.style.color = '#FF9800';
-            } else {
-                const pct = Math.round((PEAK_FACTOR - 1) * (currentPeakPercent / 100) * 100);
-                currentModeLabel.textContent = `+${pct}% congestion`;
-                currentModeLabel.style.color = '#2E86AB';
-            }
         }
 
         // Show error message
@@ -449,12 +540,8 @@
             }).addTo(markerLayer);
 
             try {
-                const profile = modeSelect.value;
-                const data = await fetchIsochrones(lat, lng, profile);
-
-                currentIsochrones = data;
-                displayIsochrones(data, currentPeakPercent);
-
+                const data = await fetchIsochrones(lat, lng, currentMode);
+                displayIsochrones(data);
                 statsContainer.style.display = 'block';
 
                 // Zoom to fit isochrones
@@ -464,7 +551,7 @@
                 }
             } catch (error) {
                 console.error('Error fetching isochrones:', error);
-                showError(`Failed to fetch isochrones: ${error.message}`);
+                showError(error.message);
                 clickPrompt.style.display = 'block';
                 statsContainer.style.display = 'none';
             } finally {
@@ -475,23 +562,15 @@
         // Event listeners
         map.on('click', handleMapClick);
 
-        modeSelect.addEventListener('change', () => {
-            if (currentOrigin) {
-                // Re-fetch with new transport mode
-                handleMapClick({ latlng: { lat: currentOrigin.lat, lng: currentOrigin.lon } });
-            }
-        });
-
-        peakSlider.addEventListener('input', function() {
-            currentPeakPercent = parseInt(this.value);
-            updateModeLabel();
-            if (currentIsochrones) {
-                displayIsochrones(currentIsochrones, currentPeakPercent);
+        // Allow pressing Enter in API key input
+        apiKeyInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                saveApiKey();
             }
         });
 
         // Initialize
-        updateModeLabel();
+        updateApiKeyStatus();
     </script>
 </body>
 </html>
