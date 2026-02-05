@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Music League - Listener Analysis</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        * { box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+            color: #333;
+        }
+        h1 { margin-bottom: 5px; }
+        h2 { margin-top: 30px; margin-bottom: 15px; color: #444; border-bottom: 2px solid #007bff; padding-bottom: 5px; }
+        .subtitle { color: #666; margin-bottom: 20px; }
+        .nav { margin-bottom: 20px; }
+        .nav a { color: #007bff; text-decoration: none; margin-right: 15px; }
+        .nav a:hover { text-decoration: underline; }
+        .nav a.active { font-weight: bold; }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+        .stat-card {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+        .stat-card .value { font-size: 28px; font-weight: bold; color: #007bff; }
+        .stat-card .label { font-size: 12px; color: #666; margin-top: 5px; }
+        .stat-card.positive .value { color: #28a745; }
+        .stat-card.negative .value { color: #dc3545; }
+
+        .chart-container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .chart-container h3 { margin: 0 0 15px 0; color: #444; font-size: 16px; }
+        .chart-wrapper { position: relative; height: 300px; }
+
+        .bin-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14px;
+        }
+        .bin-table th, .bin-table td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid #eee;
+        }
+        .bin-table th { background: #f8f9fa; font-weight: 600; }
+        .bin-table tr:hover { background: #f8f9fa; }
+        .bin-table .z-positive { color: #28a745; font-weight: bold; }
+        .bin-table .z-negative { color: #dc3545; font-weight: bold; }
+        .bin-table .highlight { background: rgba(40, 167, 69, 0.1); }
+
+        .songs-container {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        .songs-header {
+            padding: 15px 20px;
+            background: #f8f9fa;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .songs-header h3 { margin: 0; font-size: 16px; color: #444; }
+        .filter-group { display: flex; gap: 10px; align-items: center; }
+        .filter-group label { font-size: 13px; color: #666; }
+        select {
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        .songs-list { max-height: 500px; overflow-y: auto; }
+        .song-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 20px;
+            border-bottom: 1px solid #eee;
+        }
+        .song-item:last-child { border-bottom: none; }
+        .song-item:hover { background: #f8f9fa; }
+        .song-info { flex: 1; }
+        .song-info .artist { font-weight: 500; }
+        .song-info .track { color: #666; font-size: 13px; }
+        .song-info .meta { color: #999; font-size: 12px; margin-top: 3px; }
+        .song-stats { text-align: right; min-width: 150px; }
+        .song-stats .listeners { font-size: 13px; color: #666; }
+        .song-stats .z-score { font-weight: bold; font-size: 16px; }
+        .song-stats .z-score.positive { color: #28a745; }
+        .song-stats .z-score.negative { color: #dc3545; }
+
+        .loading { text-align: center; padding: 40px; color: #666; }
+        .no-data { color: #999; font-style: italic; text-align: center; padding: 40px; }
+    </style>
+</head>
+<body>
+    <h1>Listener Count Analysis</h1>
+    <p class="subtitle">Does obscurity correlate with Music League success?</p>
+
+    <div class="nav">
+        <a href="/rymlfm/">Albums</a>
+        <a href="/rymlfm/songs/">Songs</a>
+        <a href="/rymlfm/musicleague/">Explorer</a>
+        <a href="/rymlfm/musicleague/stats.html">Statistics</a>
+        <a href="/rymlfm/musicleague/listeners.html" class="active">Listeners</a>
+    </div>
+
+    <div id="loading" class="loading">
+        <p>Loading database...</p>
+    </div>
+
+    <div id="app" style="display: none;">
+        <div class="stats-grid" id="summary-stats"></div>
+
+        <h2>Performance by Listener Count</h2>
+        <div class="chart-container">
+            <h3>Average Z-Score by Last.fm Listener Bin</h3>
+            <p style="color: #666; font-size: 13px; margin-bottom: 15px;">
+                Hypothesis: Songs with moderate listener counts (not too famous, not too obscure) may perform better
+            </p>
+            <div class="chart-wrapper">
+                <canvas id="binChart"></canvas>
+            </div>
+        </div>
+
+        <div class="chart-container">
+            <h3>Detailed Breakdown by Bin</h3>
+            <table class="bin-table" id="bin-table"></table>
+        </div>
+
+        <h2>Hidden Gems</h2>
+        <div class="songs-container">
+            <div class="songs-header">
+                <h3>Top Performers by Listener Bin</h3>
+                <div class="filter-group">
+                    <label>Listener Range:</label>
+                    <select id="bin-filter">
+                        <option value="all">All</option>
+                        <option value="0-1k">Under 1k (Ultra Obscure)</option>
+                        <option value="1k-10k">1k - 10k (Obscure)</option>
+                        <option value="10k-50k">10k - 50k (Niche)</option>
+                        <option value="50k-100k">50k - 100k (Moderate)</option>
+                        <option value="100k-500k">100k - 500k (Popular)</option>
+                        <option value="500k-1m">500k - 1M (Very Popular)</option>
+                        <option value="1m+">1M+ (Mainstream)</option>
+                    </select>
+                </div>
+            </div>
+            <div class="songs-list" id="songs-list"></div>
+        </div>
+
+        <h2>Best Performing Songs</h2>
+        <div class="songs-container">
+            <div class="songs-header">
+                <h3>Highest Z-Scores with Listener Data</h3>
+            </div>
+            <div class="songs-list" id="top-songs"></div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.10.2/sql-wasm.min.js"></script>
+    <script>
+        let db = null;
+        const BINS = [
+            { key: '0-1k', label: '< 1k', min: 0, max: 1000 },
+            { key: '1k-10k', label: '1k - 10k', min: 1000, max: 10000 },
+            { key: '10k-50k', label: '10k - 50k', min: 10000, max: 50000 },
+            { key: '50k-100k', label: '50k - 100k', min: 50000, max: 100000 },
+            { key: '100k-500k', label: '100k - 500k', min: 100000, max: 500000 },
+            { key: '500k-1m', label: '500k - 1M', min: 500000, max: 1000000 },
+            { key: '1m+', label: '1M+', min: 1000000, max: Infinity }
+        ];
+
+        async function initDB() {
+            try {
+                const SQL = await initSqlJs({
+                    locateFile: file => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.10.2/${file}`
+                });
+
+                const response = await fetch('/rymlfm/musicleague_processed.db');
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+                const buffer = await response.arrayBuffer();
+                db = new SQL.Database(new Uint8Array(buffer));
+
+                // Check if listener data exists
+                const hasListeners = db.exec(`
+                    SELECT COUNT(*) as cnt FROM track_metadata
+                    WHERE lastfm_listeners IS NOT NULL AND lastfm_listeners > 0
+                `)[0].values[0][0];
+
+                if (hasListeners === 0) {
+                    document.getElementById('loading').innerHTML = `
+                        <p style="color: #666;">
+                            Listener data not yet fetched.<br>
+                            Run <code>python3 fetch_lastfm_listeners.py</code> to populate this data.
+                        </p>
+                    `;
+                    return;
+                }
+
+                renderSummary();
+                renderBinChart();
+                renderBinTable();
+                renderSongsList('all');
+                renderTopSongs();
+
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('app').style.display = 'block';
+
+                document.getElementById('bin-filter').addEventListener('change', (e) => {
+                    renderSongsList(e.target.value);
+                });
+            } catch (err) {
+                document.getElementById('loading').innerHTML = `<p style="color: #dc3545;">Error: ${err.message}</p>`;
+                console.error(err);
+            }
+        }
+
+        function formatListeners(n) {
+            if (n >= 1000000) return (n / 1000000).toFixed(1) + 'M';
+            if (n >= 1000) return Math.round(n / 1000) + 'k';
+            return n.toString();
+        }
+
+        function renderSummary() {
+            const stats = db.exec(`
+                SELECT
+                    COUNT(*) as total,
+                    SUM(CASE WHEN tm.lastfm_listeners > 0 THEN 1 ELSE 0 END) as with_data,
+                    MIN(tm.lastfm_listeners) as min_listeners,
+                    MAX(tm.lastfm_listeners) as max_listeners,
+                    AVG(tm.lastfm_listeners) as avg_listeners
+                FROM submission_scores s
+                LEFT JOIN track_metadata tm ON s.artist_norm = tm.artist_norm AND s.track_norm = tm.track_norm
+                WHERE tm.lastfm_listeners IS NOT NULL
+            `)[0].values[0];
+
+            // Find best performing bin
+            const bestBin = db.exec(`
+                SELECT
+                    CASE
+                        WHEN tm.lastfm_listeners < 1000 THEN '< 1k'
+                        WHEN tm.lastfm_listeners < 10000 THEN '1k-10k'
+                        WHEN tm.lastfm_listeners < 50000 THEN '10k-50k'
+                        WHEN tm.lastfm_listeners < 100000 THEN '50k-100k'
+                        WHEN tm.lastfm_listeners < 500000 THEN '100k-500k'
+                        WHEN tm.lastfm_listeners < 1000000 THEN '500k-1M'
+                        ELSE '1M+'
+                    END as bin,
+                    AVG(s.z_score) as avg_z
+                FROM submission_scores s
+                JOIN track_metadata tm ON s.artist_norm = tm.artist_norm AND s.track_norm = tm.track_norm
+                WHERE tm.lastfm_listeners > 0
+                GROUP BY bin
+                HAVING COUNT(*) >= 20
+                ORDER BY avg_z DESC
+                LIMIT 1
+            `)[0].values[0];
+
+            document.getElementById('summary-stats').innerHTML = `
+                <div class="stat-card"><div class="value">${stats[1]}</div><div class="label">Tracks with Listener Data</div></div>
+                <div class="stat-card"><div class="value">${formatListeners(stats[3])}</div><div class="label">Max Listeners</div></div>
+                <div class="stat-card"><div class="value">${formatListeners(Math.round(stats[4]))}</div><div class="label">Avg Listeners</div></div>
+                <div class="stat-card positive"><div class="value">${bestBin ? bestBin[0] : 'N/A'}</div><div class="label">Best Performing Bin</div></div>
+            `;
+        }
+
+        function renderBinChart() {
+            const binData = db.exec(`
+                SELECT
+                    CASE
+                        WHEN tm.lastfm_listeners < 1000 THEN 1
+                        WHEN tm.lastfm_listeners < 10000 THEN 2
+                        WHEN tm.lastfm_listeners < 50000 THEN 3
+                        WHEN tm.lastfm_listeners < 100000 THEN 4
+                        WHEN tm.lastfm_listeners < 500000 THEN 5
+                        WHEN tm.lastfm_listeners < 1000000 THEN 6
+                        ELSE 7
+                    END as bin_order,
+                    CASE
+                        WHEN tm.lastfm_listeners < 1000 THEN '< 1k'
+                        WHEN tm.lastfm_listeners < 10000 THEN '1k-10k'
+                        WHEN tm.lastfm_listeners < 50000 THEN '10k-50k'
+                        WHEN tm.lastfm_listeners < 100000 THEN '50k-100k'
+                        WHEN tm.lastfm_listeners < 500000 THEN '100k-500k'
+                        WHEN tm.lastfm_listeners < 1000000 THEN '500k-1M'
+                        ELSE '1M+'
+                    END as bin,
+                    AVG(s.z_score) as avg_z,
+                    COUNT(*) as cnt
+                FROM submission_scores s
+                JOIN track_metadata tm ON s.artist_norm = tm.artist_norm AND s.track_norm = tm.track_norm
+                WHERE tm.lastfm_listeners > 0
+                GROUP BY bin
+                ORDER BY bin_order
+            `)[0];
+
+            const labels = binData.values.map(r => r[1]);
+            const values = binData.values.map(r => r[2]);
+            const counts = binData.values.map(r => r[3]);
+
+            const ctx = document.getElementById('binChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Avg Z-Score',
+                        data: values,
+                        backgroundColor: values.map(v => v >= 0 ? 'rgba(40, 167, 69, 0.7)' : 'rgba(220, 53, 69, 0.7)'),
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                afterLabel: (ctx) => `n = ${counts[ctx.dataIndex]} songs`
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: { display: true, text: 'Avg Z-Score' }
+                        },
+                        x: {
+                            title: { display: true, text: 'Last.fm Listener Count' }
+                        }
+                    }
+                }
+            });
+        }
+
+        function renderBinTable() {
+            const binData = db.exec(`
+                SELECT
+                    CASE
+                        WHEN tm.lastfm_listeners < 1000 THEN 1
+                        WHEN tm.lastfm_listeners < 10000 THEN 2
+                        WHEN tm.lastfm_listeners < 50000 THEN 3
+                        WHEN tm.lastfm_listeners < 100000 THEN 4
+                        WHEN tm.lastfm_listeners < 500000 THEN 5
+                        WHEN tm.lastfm_listeners < 1000000 THEN 6
+                        ELSE 7
+                    END as bin_order,
+                    CASE
+                        WHEN tm.lastfm_listeners < 1000 THEN '< 1k (Ultra Obscure)'
+                        WHEN tm.lastfm_listeners < 10000 THEN '1k - 10k (Obscure)'
+                        WHEN tm.lastfm_listeners < 50000 THEN '10k - 50k (Niche)'
+                        WHEN tm.lastfm_listeners < 100000 THEN '50k - 100k (Moderate)'
+                        WHEN tm.lastfm_listeners < 500000 THEN '100k - 500k (Popular)'
+                        WHEN tm.lastfm_listeners < 1000000 THEN '500k - 1M (Very Popular)'
+                        ELSE '1M+ (Mainstream)'
+                    END as bin,
+                    COUNT(*) as cnt,
+                    AVG(s.z_score) as avg_z,
+                    SUM(s.is_winner) as wins,
+                    ROUND(100.0 * SUM(s.is_winner) / COUNT(*), 1) as win_rate,
+                    ROUND(100.0 * SUM(s.is_podium) / COUNT(*), 1) as podium_rate
+                FROM submission_scores s
+                JOIN track_metadata tm ON s.artist_norm = tm.artist_norm AND s.track_norm = tm.track_norm
+                WHERE tm.lastfm_listeners > 0
+                GROUP BY bin
+                ORDER BY bin_order
+            `)[0];
+
+            let html = `
+                <thead>
+                    <tr>
+                        <th>Listener Bin</th>
+                        <th>Songs</th>
+                        <th>Avg Z-Score</th>
+                        <th>Wins</th>
+                        <th>Win Rate</th>
+                        <th>Podium Rate</th>
+                    </tr>
+                </thead>
+                <tbody>
+            `;
+
+            // Find max avg_z for highlighting
+            const maxZ = Math.max(...binData.values.map(r => r[3]));
+
+            binData.values.forEach(row => {
+                const isHighlight = row[3] === maxZ;
+                const zClass = row[3] >= 0 ? 'z-positive' : 'z-negative';
+                html += `
+                    <tr class="${isHighlight ? 'highlight' : ''}">
+                        <td>${row[1]}</td>
+                        <td>${row[2]}</td>
+                        <td class="${zClass}">${row[3] >= 0 ? '+' : ''}${row[3].toFixed(3)}</td>
+                        <td>${row[4]}</td>
+                        <td>${row[5]}%</td>
+                        <td>${row[6]}%</td>
+                    </tr>
+                `;
+            });
+
+            html += '</tbody>';
+            document.getElementById('bin-table').innerHTML = html;
+        }
+
+        function renderSongsList(binKey) {
+            let whereClause = 'WHERE tm.lastfm_listeners > 0';
+            if (binKey !== 'all') {
+                const bin = BINS.find(b => b.key === binKey);
+                if (bin) {
+                    whereClause += ` AND tm.lastfm_listeners >= ${bin.min}`;
+                    if (bin.max !== Infinity) {
+                        whereClause += ` AND tm.lastfm_listeners < ${bin.max}`;
+                    }
+                }
+            }
+
+            const songs = db.exec(`
+                SELECT s.artists, s.title, s.submitter_name, s.z_score, s.round_name,
+                       tm.lastfm_listeners
+                FROM submission_scores s
+                JOIN track_metadata tm ON s.artist_norm = tm.artist_norm AND s.track_norm = tm.track_norm
+                ${whereClause}
+                ORDER BY s.z_score DESC
+                LIMIT 50
+            `)[0];
+
+            if (!songs || songs.values.length === 0) {
+                document.getElementById('songs-list').innerHTML = '<div class="no-data">No songs in this range</div>';
+                return;
+            }
+
+            let html = '';
+            songs.values.forEach(row => {
+                const zClass = row[3] >= 0 ? 'positive' : 'negative';
+                html += `
+                    <div class="song-item">
+                        <div class="song-info">
+                            <div class="artist">${escapeHtml(row[0])}</div>
+                            <div class="track">${escapeHtml(row[1])}</div>
+                            <div class="meta">by ${escapeHtml(row[2])} in ${escapeHtml(row[4])}</div>
+                        </div>
+                        <div class="song-stats">
+                            <div class="listeners">${formatListeners(row[5])} listeners</div>
+                            <div class="z-score ${zClass}">${row[3] >= 0 ? '+' : ''}${row[3].toFixed(2)}</div>
+                        </div>
+                    </div>
+                `;
+            });
+
+            document.getElementById('songs-list').innerHTML = html;
+        }
+
+        function renderTopSongs() {
+            const songs = db.exec(`
+                SELECT s.artists, s.title, s.submitter_name, s.z_score, s.round_name,
+                       tm.lastfm_listeners
+                FROM submission_scores s
+                JOIN track_metadata tm ON s.artist_norm = tm.artist_norm AND s.track_norm = tm.track_norm
+                WHERE tm.lastfm_listeners > 0
+                ORDER BY s.z_score DESC
+                LIMIT 30
+            `)[0];
+
+            let html = '';
+            songs.values.forEach(row => {
+                const zClass = row[3] >= 0 ? 'positive' : 'negative';
+                html += `
+                    <div class="song-item">
+                        <div class="song-info">
+                            <div class="artist">${escapeHtml(row[0])}</div>
+                            <div class="track">${escapeHtml(row[1])}</div>
+                            <div class="meta">by ${escapeHtml(row[2])} in ${escapeHtml(row[4])}</div>
+                        </div>
+                        <div class="song-stats">
+                            <div class="listeners">${formatListeners(row[5])} listeners</div>
+                            <div class="z-score ${zClass}">${row[3] >= 0 ? '+' : ''}${row[3].toFixed(2)}</div>
+                        </div>
+                    </div>
+                `;
+            });
+
+            document.getElementById('top-songs').innerHTML = html;
+        }
+
+        function escapeHtml(text) {
+            if (!text) return '';
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        document.addEventListener('DOMContentLoaded', initDB);
+    </script>
+</body>
+</html>
