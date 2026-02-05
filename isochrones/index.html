@@ -537,12 +537,20 @@
                 return timeB - timeA;
             });
 
-            const stats = [];
-            let maxPopulation = 0;
+            // Aggregate stats by time threshold
+            const statsByTime = {};
 
             results.forEach(result => {
                 const timeMinutes = parseInt(result.search_id.split('_')[1]);
                 const color = getColorForTime(timeMinutes);
+
+                // Initialize stats for this time if not exists
+                if (!statsByTime[timeMinutes]) {
+                    statsByTime[timeMinutes] = { time: timeMinutes, population: 0, area: 0 };
+                }
+
+                // Collect all polygons for this time threshold
+                const allGeojsonFeatures = [];
 
                 result.shapes.forEach(shape => {
                     // Convert TravelTime format to GeoJSON
@@ -564,19 +572,9 @@
                         }
                     };
 
-                    // Calculate area using Turf
-                    const areaKm2 = (turf.area(geojson) / 1000000).toFixed(1);
+                    allGeojsonFeatures.push(geojson);
 
-                    // Calculate population
-                    loadingText.textContent = `Calculating population for ${timeMinutes} min...`;
-                    const population = calculatePopulation(geojson.geometry);
-
-                    if (timeMinutes === 60) {
-                        maxPopulation = population;
-                    }
-
-                    stats.push({ time: timeMinutes, population, area: areaKm2 });
-
+                    // Add to map
                     L.geoJSON(geojson, {
                         style: {
                             fillColor: color,
@@ -584,17 +582,46 @@
                             weight: 1,
                             fillOpacity: 0.5
                         }
-                    }).bindPopup(`
-                        <strong>${timeMinutes} minutes</strong><br>
-                        Population: ${population.toLocaleString()}<br>
-                        Area: ${areaKm2} km²
-                    `).addTo(isochroneLayer);
+                    }).addTo(isochroneLayer);
                 });
+
+                // Calculate total area for this time threshold
+                loadingText.textContent = `Calculating stats for ${timeMinutes} min...`;
+                let totalArea = 0;
+                let totalPop = 0;
+
+                allGeojsonFeatures.forEach(geojson => {
+                    totalArea += turf.area(geojson) / 1000000;
+                    totalPop += calculatePopulation(geojson.geometry);
+                });
+
+                statsByTime[timeMinutes].area = totalArea;
+                statsByTime[timeMinutes].population = totalPop;
             });
+
+            // Convert to array and sort
+            const stats = Object.values(statsByTime).sort((a, b) => a.time - b.time);
+
+            // Get max population (60 min or largest available)
+            const maxTimeStat = stats[stats.length - 1];
+            const maxPopulation = maxTimeStat ? maxTimeStat.population : 0;
 
             // Update total population display
             totalPopValue.textContent = maxPopulation.toLocaleString();
             totalPopMode.textContent = MODE_LABELS[currentMode];
+
+            // Add popups with correct aggregated stats
+            isochroneLayer.eachLayer(layer => {
+                const time = layer.feature?.properties?.time;
+                if (time && statsByTime[time]) {
+                    const s = statsByTime[time];
+                    layer.bindPopup(`
+                        <strong>${time} minutes</strong><br>
+                        Population: ${s.population.toLocaleString()}<br>
+                        Area: ${s.area.toFixed(1)} km²
+                    `);
+                }
+            });
 
             updateStats(stats);
         }
@@ -608,7 +635,7 @@
                 <tr>
                     <td>${s.time} min</td>
                     <td class="population-highlight">${s.population.toLocaleString()}</td>
-                    <td>${s.area}</td>
+                    <td>${s.area.toFixed(1)}</td>
                 </tr>
             `).join('');
         }
