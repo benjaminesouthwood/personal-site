@@ -357,9 +357,9 @@
             maxZoom: 19
         }).addTo(map);
 
-        // Layer groups
-        let isochroneLayer = L.layerGroup().addTo(map);
-        let markerLayer = L.layerGroup().addTo(map);
+        // Layer groups (featureGroup supports getBounds)
+        let isochroneLayer = L.featureGroup().addTo(map);
+        let markerLayer = L.featureGroup().addTo(map);
 
         // State
         let currentOrigin = null;
