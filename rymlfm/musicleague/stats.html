@@ -189,6 +189,39 @@
             </div>
         </div>
 
+        <h2>Spotify Insights</h2>
+        <p class="subtitle" style="margin-top: -10px;">Track and artist popularity data from Spotify API</p>
+
+        <div class="stats-grid" id="spotify-summary-stats"></div>
+
+        <div class="chart-grid">
+            <div class="chart-container">
+                <h3>Z-Score by Spotify Track Popularity</h3>
+                <p style="color: #666; font-size: 12px; margin: -10px 0 15px 0;">Sweet spot: Niche tracks (20-40 popularity)</p>
+                <div class="chart-wrapper">
+                    <canvas id="spotifyPopChart"></canvas>
+                </div>
+            </div>
+            <div class="chart-container">
+                <h3>Z-Score by Artist Followers</h3>
+                <p style="color: #666; font-size: 12px; margin: -10px 0 15px 0;">Sweet spot: Small artists (10k-100k followers)</p>
+                <div class="chart-wrapper">
+                    <canvas id="spotifyFollowersChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <div class="chart-grid">
+            <div class="chart-container">
+                <h3>Best Spotify Genres</h3>
+                <div class="artist-list" id="spotify-top-genres"></div>
+            </div>
+            <div class="chart-container">
+                <h3>Worst Spotify Genres</h3>
+                <div class="artist-list" id="spotify-bottom-genres"></div>
+            </div>
+        </div>
+
         <h2>Wikipedia Coverage</h2>
         <div class="wiki-stats">
             <div class="wiki-card">
@@ -252,6 +285,7 @@
                 renderDurationChart();
                 renderGenreChart();
                 renderBenDecadeChart();
+                renderSpotifyStats();
                 renderWikipedia();
                 renderHeatmap();
                 renderSeasonChart();
@@ -404,6 +438,114 @@
                     }
                 }
             });
+        }
+
+        function renderSpotifyStats() {
+            // Check if Spotify data exists
+            if (!stats.spotify_summary) {
+                document.getElementById('spotify-summary-stats').innerHTML = '<p style="color: #666;">Spotify data not available</p>';
+                return;
+            }
+
+            // Summary cards
+            const s = stats.spotify_summary;
+            document.getElementById('spotify-summary-stats').innerHTML = `
+                <div class="stat-card"><div class="value">${s.tracks_with_data.toLocaleString()}</div><div class="label">Tracks with Spotify Data</div></div>
+                <div class="stat-card"><div class="value">${s.avg_track_popularity}</div><div class="label">Avg Track Popularity</div></div>
+                <div class="stat-card"><div class="value">${s.artists_with_data.toLocaleString()}</div><div class="label">Artists with Data</div></div>
+                <div class="stat-card"><div class="value">${(s.avg_artist_followers / 1000000).toFixed(1)}M</div><div class="label">Avg Artist Followers</div></div>
+            `;
+
+            // Popularity chart
+            if (stats.spotify_popularity) {
+                const ctx = document.getElementById('spotifyPopChart').getContext('2d');
+                new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: stats.spotify_popularity.labels,
+                        datasets: [{
+                            label: 'Avg Z-Score',
+                            data: stats.spotify_popularity.values,
+                            backgroundColor: getBarColors(stats.spotify_popularity.values),
+                            borderWidth: 0
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { display: false },
+                            tooltip: {
+                                callbacks: {
+                                    afterLabel: (ctx) => `n = ${stats.spotify_popularity.counts[ctx.dataIndex]}`
+                                }
+                            }
+                        },
+                        scales: {
+                            y: { title: { display: true, text: 'Avg Z-Score' } }
+                        }
+                    }
+                });
+            }
+
+            // Followers chart
+            if (stats.spotify_followers) {
+                const ctx = document.getElementById('spotifyFollowersChart').getContext('2d');
+                new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: stats.spotify_followers.labels,
+                        datasets: [{
+                            label: 'Avg Z-Score',
+                            data: stats.spotify_followers.values,
+                            backgroundColor: getBarColors(stats.spotify_followers.values),
+                            borderWidth: 0
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { display: false },
+                            tooltip: {
+                                callbacks: {
+                                    afterLabel: (ctx) => `n = ${stats.spotify_followers.counts[ctx.dataIndex]}`
+                                }
+                            }
+                        },
+                        scales: {
+                            y: { title: { display: true, text: 'Avg Z-Score' } }
+                        }
+                    }
+                });
+            }
+
+            // Genre lists
+            if (stats.spotify_genres) {
+                let topHtml = '';
+                stats.spotify_genres.top.forEach(item => {
+                    topHtml += `
+                        <div class="artist-item">
+                            <span class="name">${item.genre}</span>
+                            <span class="meta">n=${item.count}</span>
+                            <span class="z-score positive">+${item.avg_z.toFixed(3)}</span>
+                        </div>
+                    `;
+                });
+                document.getElementById('spotify-top-genres').innerHTML = topHtml;
+
+                let bottomHtml = '';
+                stats.spotify_genres.bottom.forEach(item => {
+                    bottomHtml += `
+                        <div class="artist-item">
+                            <span class="name">${item.genre}</span>
+                            <span class="meta">n=${item.count}</span>
+                            <span class="z-score negative">${item.avg_z.toFixed(3)}</span>
+                        </div>
+                    `;
+                });
+                document.getElementById('spotify-bottom-genres').innerHTML = bottomHtml;
+            }
         }
 
         function renderWikipedia() {

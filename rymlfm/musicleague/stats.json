@@ -998,6 +998,215 @@
       "avg_z": 1.835
     }
   ],
+  "spotify_popularity": {
+    "labels": [
+      "Obscure\n(<20)",
+      "Niche\n(20-40)",
+      "Moderate\n(40-60)",
+      "Popular\n(60-80)",
+      "Mainstream\n(80+)"
+    ],
+    "values": [
+      -0.021,
+      0.108,
+      0.012,
+      -0.099,
+      -0.907
+    ],
+    "counts": [
+      787,
+      752,
+      721,
+      325,
+      45
+    ]
+  },
+  "spotify_followers": {
+    "labels": [
+      "Tiny\n(<10k)",
+      "Small\n(10k-100k)",
+      "Medium\n(100k-1M)",
+      "Large\n(1M-10M)",
+      "Massive\n(10M+)"
+    ],
+    "values": [
+      -0.01,
+      0.15,
+      0.067,
+      -0.156,
+      -0.356
+    ],
+    "counts": [
+      313,
+      606,
+      953,
+      592,
+      166
+    ]
+  },
+  "spotify_genres": {
+    "top": [
+      {
+        "genre": "classic soul",
+        "avg_z": 0.748,
+        "count": 15
+      },
+      {
+        "genre": "city pop",
+        "avg_z": 0.696,
+        "count": 12
+      },
+      {
+        "genre": "jazz rap",
+        "avg_z": 0.692,
+        "count": 27
+      },
+      {
+        "genre": "black metal",
+        "avg_z": 0.648,
+        "count": 12
+      },
+      {
+        "genre": "french pop",
+        "avg_z": 0.598,
+        "count": 14
+      },
+      {
+        "genre": "dark ambient",
+        "avg_z": 0.592,
+        "count": 12
+      },
+      {
+        "genre": "indie punk",
+        "avg_z": 0.584,
+        "count": 10
+      },
+      {
+        "genre": "slowcore",
+        "avg_z": 0.52,
+        "count": 32
+      },
+      {
+        "genre": "old school hip hop",
+        "avg_z": 0.489,
+        "count": 37
+      },
+      {
+        "genre": "nu jazz",
+        "avg_z": 0.478,
+        "count": 13
+      },
+      {
+        "genre": "math rock",
+        "avg_z": 0.473,
+        "count": 23
+      },
+      {
+        "genre": "motown",
+        "avg_z": 0.465,
+        "count": 18
+      },
+      {
+        "genre": "underground hip hop",
+        "avg_z": 0.433,
+        "count": 16
+      },
+      {
+        "genre": "soul",
+        "avg_z": 0.422,
+        "count": 18
+      },
+      {
+        "genre": "medieval",
+        "avg_z": 0.416,
+        "count": 13
+      }
+    ],
+    "bottom": [
+      {
+        "genre": "musique concr\u00e8te",
+        "avg_z": -1.148,
+        "count": 10
+      },
+      {
+        "genre": "comedy",
+        "avg_z": -0.895,
+        "count": 10
+      },
+      {
+        "genre": "grunge",
+        "avg_z": -0.782,
+        "count": 10
+      },
+      {
+        "genre": "swing music",
+        "avg_z": -0.738,
+        "count": 12
+      },
+      {
+        "genre": "eurodance",
+        "avg_z": -0.672,
+        "count": 10
+      },
+      {
+        "genre": "opera",
+        "avg_z": -0.67,
+        "count": 16
+      },
+      {
+        "genre": "cloud rap",
+        "avg_z": -0.558,
+        "count": 12
+      },
+      {
+        "genre": "alternative rock",
+        "avg_z": -0.525,
+        "count": 44
+      },
+      {
+        "genre": "nu metal",
+        "avg_z": -0.503,
+        "count": 15
+      },
+      {
+        "genre": "alternative metal",
+        "avg_z": -0.49,
+        "count": 20
+      },
+      {
+        "genre": "breakbeat",
+        "avg_z": -0.489,
+        "count": 11
+      },
+      {
+        "genre": "funk rock",
+        "avg_z": -0.463,
+        "count": 14
+      },
+      {
+        "genre": "queercore",
+        "avg_z": -0.43,
+        "count": 10
+      },
+      {
+        "genre": "rap",
+        "avg_z": -0.423,
+        "count": 29
+      },
+      {
+        "genre": "vocal jazz",
+        "avg_z": -0.422,
+        "count": 12
+      }
+    ]
+  },
+  "spotify_summary": {
+    "tracks_with_data": 2573,
+    "avg_track_popularity": 34.4,
+    "artists_with_data": 2534,
+    "avg_artist_popularity": 45.9,
+    "avg_artist_followers": 1672380
+  },
   "summary": {
     "total_submissions": 2630,
     "total_rounds": 152,
