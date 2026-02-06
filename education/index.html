@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UK School Pupil Numbers | Ben Southwood</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f5f5f5;
+            color: #333;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        header {
+            background: #2c3e50;
+            color: white;
+            padding: 30px 20px;
+            margin-bottom: 30px;
+        }
+
+        header h1 {
+            font-size: 1.8rem;
+            margin-bottom: 8px;
+        }
+
+        header p {
+            opacity: 0.85;
+            font-size: 1rem;
+            max-width: 700px;
+        }
+
+        .chart-section {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+            overflow: hidden;
+        }
+
+        .section-header {
+            background: #34495e;
+            color: white;
+            padding: 14px 20px;
+            font-weight: 600;
+            font-size: 1.1rem;
+        }
+
+        .chart-container {
+            padding: 20px;
+            height: 450px;
+        }
+
+        .notes {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .notes h3 {
+            font-size: 1rem;
+            margin-bottom: 12px;
+            color: #2c3e50;
+        }
+
+        .notes ul {
+            margin-left: 20px;
+            color: #555;
+        }
+
+        .notes li {
+            margin-bottom: 6px;
+        }
+
+        .sources {
+            font-size: 0.9rem;
+            color: #666;
+            padding: 15px 20px;
+            background: #f9f9f9;
+            border-top: 1px solid #eee;
+        }
+
+        .sources a {
+            color: #2d5c4f;
+        }
+
+        footer {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        footer a {
+            color: #2d5c4f;
+        }
+
+        @media (max-width: 768px) {
+            header h1 {
+                font-size: 1.4rem;
+            }
+            .chart-container {
+                height: 350px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="container">
+            <h1>UK School Pupil Numbers (England, 2000-2024)</h1>
+            <p>Breakdown of state and independent school enrollment, showing British and overseas pupils in the independent sector.</p>
+        </div>
+    </header>
+
+    <div class="container">
+        <div class="chart-section">
+            <div class="section-header">Total Pupils by School Type</div>
+            <div class="chart-container">
+                <canvas id="absoluteChart"></canvas>
+            </div>
+            <div class="sources">
+                Sources: <a href="https://explore-education-statistics.service.gov.uk/find-statistics/school-pupils-and-their-characteristics" target="_blank">DfE Schools, pupils and their characteristics</a>;
+                <a href="https://www.isc.co.uk/research/" target="_blank">ISC Census</a> (international breakdown)
+            </div>
+        </div>
+
+        <div class="chart-section">
+            <div class="section-header">Independent School Share (%)</div>
+            <div class="chart-container">
+                <canvas id="percentageChart"></canvas>
+            </div>
+            <div class="sources">
+                Percentage of total school pupils attending independent schools, split by British and overseas domicile.
+            </div>
+        </div>
+
+        <div class="notes">
+            <h3>Notes</h3>
+            <ul>
+                <li><strong>England only</strong> - Scotland, Wales, and Northern Ireland have separate education systems</li>
+                <li><strong>2008-2010</strong> - Financial crisis impact visible in independent school enrollment</li>
+                <li><strong>2020/21</strong> - COVID travel restrictions reduced overseas pupil numbers</li>
+                <li><strong>2024/25</strong> - First decline in years (VAT policy impact beginning)</li>
+                <li>International student figures are estimates based on ISC census data (~8-10% of ISC member school enrollment)</li>
+            </ul>
+        </div>
+    </div>
+
+    <footer>
+        <a href="/">Ben Southwood</a>
+    </footer>
+
+    <script>
+        const years = [
+            '2000/01', '2001/02', '2002/03', '2003/04', '2004/05',
+            '2005/06', '2006/07', '2007/08', '2008/09', '2009/10',
+            '2010/11', '2011/12', '2012/13', '2013/14', '2014/15',
+            '2015/16', '2016/17', '2017/18', '2018/19', '2019/20',
+            '2020/21', '2021/22', '2022/23', '2023/24', '2024/25'
+        ];
+
+        const stateSchools = [
+            7098000, 7133000, 7162000, 7182000, 7171000,
+            7135000, 7082000, 7016000, 6947000, 6913000,
+            6905000, 6925000, 6962000, 7044000, 7148000,
+            7265000, 7367000, 7482000, 7625000, 7741000,
+            7894000, 8038000, 8183000, 8318000, 8450000
+        ];
+
+        const independentBritish = [
+            545000, 548000, 551000, 553000, 555000,
+            557000, 560000, 565000, 568000, 502000,
+            465000, 468000, 470000, 472000, 474000,
+            469000, 473000, 480000, 493000, 499000,
+            515000, 525000, 531000, 535000, 528000
+        ];
+
+        const independentOverseas = [
+            25000, 26000, 27000, 28000, 29000,
+            31000, 33000, 35000, 37000, 38000,
+            39000, 41000, 43000, 45000, 47000,
+            48000, 50000, 52000, 54000, 55000,
+            53000, 56000, 58000, 59000, 55000
+        ];
+
+        // Calculate totals and percentages
+        const totals = stateSchools.map((s, i) => s + independentBritish[i] + independentOverseas[i]);
+        const pctBritish = independentBritish.map((b, i) => (b / totals[i]) * 100);
+        const pctOverseas = independentOverseas.map((o, i) => (o / totals[i]) * 100);
+
+        // Chart 1: Absolute numbers (stacked bar)
+        const ctx1 = document.getElementById('absoluteChart').getContext('2d');
+        new Chart(ctx1, {
+            type: 'bar',
+            data: {
+                labels: years,
+                datasets: [
+                    {
+                        label: 'State Schools',
+                        data: stateSchools,
+                        backgroundColor: '#6c757d',
+                        borderWidth: 0
+                    },
+                    {
+                        label: 'Independent (British)',
+                        data: independentBritish,
+                        backgroundColor: '#2d5c4f',
+                        borderWidth: 0
+                    },
+                    {
+                        label: 'Independent (Overseas)',
+                        data: independentOverseas,
+                        backgroundColor: '#e67e22',
+                        borderWidth: 0
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'top',
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                const value = context.raw;
+                                return context.dataset.label + ': ' + (value / 1000000).toFixed(2) + 'M';
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        stacked: true,
+                        ticks: {
+                            maxRotation: 45,
+                            minRotation: 45
+                        }
+                    },
+                    y: {
+                        stacked: true,
+                        beginAtZero: true,
+                        ticks: {
+                            callback: function(value) {
+                                return (value / 1000000).toFixed(0) + 'M';
+                            }
+                        },
+                        title: {
+                            display: true,
+                            text: 'Number of Pupils'
+                        }
+                    }
+                }
+            }
+        });
+
+        // Chart 2: Percentage (stacked area)
+        const ctx2 = document.getElementById('percentageChart').getContext('2d');
+        new Chart(ctx2, {
+            type: 'line',
+            data: {
+                labels: years,
+                datasets: [
+                    {
+                        label: 'Independent (British) %',
+                        data: pctBritish,
+                        backgroundColor: 'rgba(45, 92, 79, 0.7)',
+                        borderColor: '#2d5c4f',
+                        borderWidth: 2,
+                        fill: true,
+                        tension: 0.3
+                    },
+                    {
+                        label: 'Independent (Overseas) %',
+                        data: pctOverseas,
+                        backgroundColor: 'rgba(230, 126, 34, 0.7)',
+                        borderColor: '#e67e22',
+                        borderWidth: 2,
+                        fill: true,
+                        tension: 0.3
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'top',
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return context.dataset.label + ': ' + context.raw.toFixed(2) + '%';
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        ticks: {
+                            maxRotation: 45,
+                            minRotation: 45
+                        }
+                    },
+                    y: {
+                        stacked: true,
+                        beginAtZero: true,
+                        max: 10,
+                        ticks: {
+                            callback: function(value) {
+                                return value + '%';
+                            }
+                        },
+                        title: {
+                            display: true,
+                            text: '% of Total School Pupils'
+                        }
+                    }
+                }
+            }
+        });
+    </script>
+</body>
+</html>
