@@ -64,7 +64,7 @@
             font-size: 14px;
             color: #666;
         }
-        input[type="text"], input[type="password"], input[type="datetime-local"] {
+        input[type="text"], input[type="password"], input[type="datetime-local"], input[type="url"] {
             flex: 1;
             min-width: 150px;
             padding: 10px;
@@ -78,7 +78,7 @@
         }
         textarea {
             width: 100%;
-            height: 150px;
+            height: 120px;
             padding: 10px;
             border: 1px solid #ddd;
             border-radius: 4px;
@@ -98,6 +98,7 @@
             border-radius: 4px;
             font-size: 14px;
             cursor: pointer;
+            white-space: nowrap;
         }
         button:hover {
             background: #0056b3;
@@ -250,6 +251,13 @@
             border-radius: 4px;
             margin-bottom: 15px;
         }
+        .info-message {
+            background: #cce5ff;
+            color: #004085;
+            padding: 10px 15px;
+            border-radius: 4px;
+            margin-bottom: 15px;
+        }
         .hidden {
             display: none !important;
         }
@@ -264,6 +272,35 @@
             background: #e9ecef;
             border-radius: 4px;
             font-size: 13px;
+        }
+        .divider {
+            text-align: center;
+            color: #999;
+            margin: 15px 0;
+            font-size: 13px;
+        }
+        details {
+            margin-top: 15px;
+        }
+        details summary {
+            cursor: pointer;
+            color: #666;
+            font-size: 13px;
+        }
+        details summary:hover {
+            color: #333;
+        }
+        .setup-note {
+            background: #fff3cd;
+            color: #856404;
+            padding: 15px;
+            border-radius: 4px;
+            margin-bottom: 15px;
+            font-size: 14px;
+        }
+        .setup-note a {
+            color: #533f03;
+            font-weight: bold;
         }
     </style>
 </head>
@@ -282,7 +319,19 @@
     <div class="card">
         <h2>Last.fm Connection</h2>
 
+        <div id="auth-connected" class="hidden">
+            <div class="connected">
+                <span>Connected as: <span class="username" id="connected-username"></span></span>
+                <button class="danger" onclick="disconnect()">Disconnect</button>
+            </div>
+        </div>
+
         <div id="auth-setup">
+            <div id="needs-setup" class="setup-note hidden">
+                <strong>One-time setup:</strong> You need a Last.fm API key to use this tool.
+                <a href="https://www.last.fm/api/account/create" target="_blank">Get one here</a> (takes 30 seconds), then enter it below.
+            </div>
+
             <div class="form-row">
                 <label>API Key:</label>
                 <input type="text" id="api-key" placeholder="Your Last.fm API key">
@@ -291,20 +340,12 @@
                 <label>API Secret:</label>
                 <input type="password" id="api-secret" placeholder="Your Last.fm API secret">
             </div>
-            <p class="help-text">
-                Get your API credentials at <a href="https://www.last.fm/api/account/create" target="_blank">last.fm/api/account/create</a>
-            </p>
             <div class="form-row" style="margin-top: 15px;">
                 <button id="connect-btn" onclick="connectToLastFm()">Connect to Last.fm</button>
-                <button class="secondary" onclick="saveCredentials()">Save Credentials</button>
             </div>
-        </div>
-
-        <div id="auth-connected" class="hidden">
-            <div class="connected">
-                <span>Connected as: <span class="username" id="connected-username"></span></span>
-                <button class="danger" onclick="disconnect()">Disconnect</button>
-            </div>
+            <p class="help-text">
+                Your credentials are saved locally and only used to authenticate with Last.fm.
+            </p>
         </div>
 
         <div id="auth-error" class="error-message hidden"></div>
@@ -313,13 +354,26 @@
     <!-- Album Input -->
     <div class="card">
         <h2>Album Input</h2>
-        <p class="help-text" style="margin-bottom: 10px;">
-            Go to a RYM album page, view page source (Cmd+Option+U on Mac, Ctrl+U on Windows), select all and copy.
-        </p>
-        <textarea id="html-input" placeholder="Paste the full HTML source of a RYM album page here..."></textarea>
-        <div class="form-row" style="margin-top: 10px;">
-            <button onclick="parseAlbum()">Parse Album</button>
+
+        <!-- URL Input (Primary) -->
+        <div class="form-row">
+            <input type="url" id="rym-url" placeholder="Paste RYM album URL (e.g. https://rateyourmusic.com/release/album/radiohead/ok-computer/)">
+            <button onclick="fetchAlbum()" id="fetch-btn">Fetch Album</button>
         </div>
+        <div id="fetch-status" class="status-bar hidden"></div>
+
+        <!-- Fallback to paste -->
+        <details>
+            <summary>URL not working? Paste HTML instead</summary>
+            <p class="help-text" style="margin: 10px 0;">
+                Go to the RYM album page, view page source (Cmd+Option+U on Mac, Ctrl+U on Windows), select all and copy.
+            </p>
+            <textarea id="html-input" placeholder="Paste the full HTML source here..."></textarea>
+            <div class="form-row" style="margin-top: 10px;">
+                <button onclick="parseAlbum()">Parse HTML</button>
+            </div>
+        </details>
+
         <div id="parse-error" class="error-message hidden"></div>
     </div>
 
@@ -363,6 +417,13 @@
         let parsedAlbum = null;
         let sessionKey = null;
 
+        // CORS proxies to try (in order)
+        const CORS_PROXIES = [
+            url => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
+            url => `https://corsproxy.io/?${encodeURIComponent(url)}`,
+            url => `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(url)}`
+        ];
+
         // Initialize on page load
         document.addEventListener('DOMContentLoaded', () => {
             // Load saved credentials
@@ -376,6 +437,8 @@
             const username = localStorage.getItem('lastfm_username');
             if (sessionKey && username) {
                 showConnected(username);
+            } else if (!savedKey || !savedSecret) {
+                document.getElementById('needs-setup').classList.remove('hidden');
             }
 
             // Check for auth callback token
@@ -391,6 +454,11 @@
             const now = new Date();
             now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
             document.getElementById('custom-time').value = now.toISOString().slice(0, 16);
+
+            // Allow Enter key on URL input
+            document.getElementById('rym-url').addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') fetchAlbum();
+            });
         });
 
         // Generate API signature
@@ -404,25 +472,23 @@
             return md5(sigString);
         }
 
-        // Save credentials to localStorage
-        function saveCredentials() {
-            const apiKey = document.getElementById('api-key').value.trim();
-            const apiSecret = document.getElementById('api-secret').value.trim();
-            if (apiKey) localStorage.setItem('lastfm_api_key', apiKey);
-            if (apiSecret) localStorage.setItem('lastfm_api_secret', apiSecret);
-            alert('Credentials saved!');
-        }
-
         // Connect to Last.fm
         function connectToLastFm() {
             const apiKey = document.getElementById('api-key').value.trim();
+            const apiSecret = document.getElementById('api-secret').value.trim();
+
             if (!apiKey) {
                 showAuthError('Please enter your API key');
                 return;
             }
+            if (!apiSecret) {
+                showAuthError('Please enter your API secret');
+                return;
+            }
 
             // Save credentials before redirect
-            saveCredentials();
+            localStorage.setItem('lastfm_api_key', apiKey);
+            localStorage.setItem('lastfm_api_secret', apiSecret);
 
             // Redirect to Last.fm auth
             const callbackUrl = window.location.origin + window.location.pathname;
@@ -436,7 +502,7 @@
             const apiSecret = localStorage.getItem('lastfm_api_secret');
 
             if (!apiKey || !apiSecret) {
-                showAuthError('Missing API credentials. Please enter and save them first.');
+                showAuthError('Missing API credentials. Please enter them first.');
                 return;
             }
 
@@ -498,11 +564,91 @@
             el.classList.remove('hidden');
         }
 
+        // Fetch album from URL via CORS proxy
+        async function fetchAlbum() {
+            const url = document.getElementById('rym-url').value.trim();
+            if (!url) {
+                showParseError('Please enter a RYM album URL');
+                return;
+            }
+
+            if (!url.includes('rateyourmusic.com')) {
+                showParseError('Please enter a valid RYM URL (rateyourmusic.com)');
+                return;
+            }
+
+            const btn = document.getElementById('fetch-btn');
+            const statusEl = document.getElementById('fetch-status');
+
+            btn.disabled = true;
+            btn.textContent = 'Fetching...';
+            statusEl.classList.remove('hidden');
+            document.getElementById('parse-error').classList.add('hidden');
+
+            let html = null;
+            let lastError = null;
+
+            // Try each CORS proxy
+            for (let i = 0; i < CORS_PROXIES.length; i++) {
+                const proxyUrl = CORS_PROXIES[i](url);
+                statusEl.textContent = `Trying proxy ${i + 1}/${CORS_PROXIES.length}...`;
+
+                try {
+                    const response = await fetch(proxyUrl, {
+                        headers: {
+                            'Accept': 'text/html'
+                        }
+                    });
+
+                    if (!response.ok) {
+                        throw new Error(`HTTP ${response.status}`);
+                    }
+
+                    html = await response.text();
+
+                    // Verify we got HTML (not an error page)
+                    if (html && html.includes('rateyourmusic') && html.includes('tracklist')) {
+                        statusEl.textContent = 'Page fetched successfully!';
+                        break;
+                    } else if (html && html.length > 1000) {
+                        // Might be valid, try parsing it
+                        statusEl.textContent = 'Page fetched, parsing...';
+                        break;
+                    } else {
+                        throw new Error('Invalid response');
+                    }
+                } catch (err) {
+                    lastError = err;
+                    html = null;
+                }
+            }
+
+            btn.disabled = false;
+            btn.textContent = 'Fetch Album';
+
+            if (!html) {
+                statusEl.classList.add('hidden');
+                showParseError(`Could not fetch page. Try the "Paste HTML" option below. (Error: ${lastError?.message || 'Unknown'})`);
+                return;
+            }
+
+            // Parse the fetched HTML
+            document.getElementById('html-input').value = html;
+            parseAlbum();
+            statusEl.classList.add('hidden');
+        }
+
         // Parse RYM album HTML
         function parseAlbum() {
-            const html = document.getElementById('html-input').value;
+            const html = document.getElementById('html-input').value || document.getElementById('rym-url').value;
             if (!html.trim()) {
-                showParseError('Please paste the HTML source of a RYM album page');
+                showParseError('Please enter a URL or paste HTML');
+                return;
+            }
+
+            // If it's a URL, we need to fetch it first
+            if (html.startsWith('http')) {
+                fetchAlbum();
                 return;
             }
 
@@ -510,12 +656,12 @@
                 const parser = new DOMParser();
                 const doc = parser.parseFromString(html, 'text/html');
 
-                // Get album title
-                const albumTitleEl = doc.querySelector('.album_title');
+                // Get album title - try multiple selectors
                 let albumTitle = '';
+                const albumTitleEl = doc.querySelector('.album_title');
                 if (albumTitleEl) {
-                    // Get text content, but filter out child elements that might be artist names
                     const titleClone = albumTitleEl.cloneNode(true);
+                    // Remove artist info if embedded
                     const byArtist = titleClone.querySelector('.album_artist');
                     if (byArtist) byArtist.remove();
                     albumTitle = titleClone.textContent.trim();
@@ -523,48 +669,83 @@
                 if (!albumTitle) {
                     albumTitle = doc.querySelector('[itemprop="name"]')?.textContent?.trim() || '';
                 }
+                if (!albumTitle) {
+                    // Try page title
+                    const pageTitle = doc.querySelector('title')?.textContent || '';
+                    const match = pageTitle.match(/^(.+?)\s+by\s+/);
+                    if (match) albumTitle = match[1].trim();
+                }
 
-                // Get artist
+                // Get artist - try multiple selectors
                 let artist = '';
-                const artistLink = doc.querySelector('span[itemprop="byArtist"] a');
-                if (artistLink) {
-                    artist = artistLink.textContent.trim();
+                const artistSelectors = [
+                    'span[itemprop="byArtist"] a',
+                    '.album_artist a',
+                    '.credited_name a',
+                    'a.artist'
+                ];
+                for (const selector of artistSelectors) {
+                    const el = doc.querySelector(selector);
+                    if (el) {
+                        artist = el.textContent.trim();
+                        break;
+                    }
                 }
                 if (!artist) {
-                    const creditedName = doc.querySelector('.credited_name a');
-                    if (creditedName) artist = creditedName.textContent.trim();
-                }
-                if (!artist) {
-                    const albumArtist = doc.querySelector('.album_artist a');
-                    if (albumArtist) artist = albumArtist.textContent.trim();
+                    // Try page title
+                    const pageTitle = doc.querySelector('title')?.textContent || '';
+                    const match = pageTitle.match(/by\s+(.+?)\s+\(/);
+                    if (match) artist = match[1].trim();
                 }
 
                 const isVariousArtists = artist.toLowerCase().includes('various artists') ||
                                          artist.includes(' / ');
 
-                // Get tracks
-                const tracksContainer = doc.getElementById('tracks');
-                const trackLines = tracksContainer ?
-                    tracksContainer.querySelectorAll('.tracklist_line, .track') :
-                    doc.querySelectorAll('.tracklist_line, .track');
+                // Get tracks - try multiple container selectors
+                let trackLines = [];
+                const trackContainers = ['#tracks', '.tracks', '[class*="tracklist"]'];
+                for (const containerSel of trackContainers) {
+                    const container = doc.querySelector(containerSel);
+                    if (container) {
+                        trackLines = container.querySelectorAll('.tracklist_line, .track, tr[class*="track"]');
+                        if (trackLines.length > 0) break;
+                    }
+                }
+                if (trackLines.length === 0) {
+                    trackLines = doc.querySelectorAll('.tracklist_line, .track');
+                }
 
                 const tracks = [];
                 trackLines.forEach((line, index) => {
                     // Track number
-                    const numEl = line.querySelector('.tracklist_num, .tracknum');
-                    const trackNum = numEl ? parseInt(numEl.textContent.trim()) || (index + 1) : (index + 1);
+                    const numEl = line.querySelector('.tracklist_num, .tracknum, td:first-child');
+                    let trackNum = index + 1;
+                    if (numEl) {
+                        const num = parseInt(numEl.textContent.trim());
+                        if (!isNaN(num)) trackNum = num;
+                    }
 
-                    // Track title
+                    // Track title - try multiple selectors
                     let trackTitle = '';
-                    const titleEl = line.querySelector('.tracklist_title .rendered_text, .tracklist_title, [itemprop="name"], .tracktitle');
-                    if (titleEl) {
-                        trackTitle = titleEl.textContent.trim();
+                    const titleSelectors = [
+                        '.tracklist_title .rendered_text',
+                        '.tracklist_title',
+                        '[itemprop="name"]',
+                        '.tracktitle',
+                        '.track_title'
+                    ];
+                    for (const selector of titleSelectors) {
+                        const el = line.querySelector(selector);
+                        if (el) {
+                            trackTitle = el.textContent.trim();
+                            if (trackTitle) break;
+                        }
                     }
 
                     // Duration
                     let duration = 180; // default 3 min
                     let durationStr = '';
-                    const durationEl = line.querySelector('.tracklist_duration, .duration');
+                    const durationEl = line.querySelector('.tracklist_duration, .duration, [class*="duration"]');
                     if (durationEl) {
                         durationStr = durationEl.textContent.trim();
                         const parts = durationStr.split(':').map(Number);
@@ -578,7 +759,7 @@
                     // Per-track artist (for VA compilations)
                     let trackArtist = artist;
                     if (isVariousArtists) {
-                        const artistEl = line.querySelector('.artist a, .credited_artist a');
+                        const artistEl = line.querySelector('.artist a, .credited_artist a, .track_artist a');
                         if (artistEl) {
                             trackArtist = artistEl.textContent.trim();
                         }
@@ -597,7 +778,7 @@
                 });
 
                 if (tracks.length === 0) {
-                    showParseError('Could not find any tracks. Make sure you copied the full page source from a RYM album page.');
+                    showParseError('Could not find any tracks. Make sure you\'re using a RYM album page with a tracklist.');
                     return;
                 }
 
@@ -689,7 +870,7 @@
             }
 
             if (!parsedAlbum) {
-                alert('Please parse an album first');
+                alert('Please fetch/parse an album first');
                 return;
             }
 
