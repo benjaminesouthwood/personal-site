@@ -1,0 +1,864 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smeed Urban Transport Model</title>
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: #333;
+        }
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        header {
+            text-align: center;
+            color: white;
+            padding: 20px 0 30px;
+        }
+        header h1 {
+            font-size: 2.2rem;
+            margin-bottom: 8px;
+        }
+        header p {
+            font-size: 1rem;
+            opacity: 0.85;
+            max-width: 700px;
+            margin: 0 auto;
+            line-height: 1.5;
+        }
+        .main-content {
+            display: grid;
+            grid-template-columns: 280px 1fr;
+            gap: 20px;
+        }
+        .sidebar {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+            height: fit-content;
+            position: sticky;
+            top: 20px;
+        }
+        .sidebar h3 {
+            color: #1a1a2e;
+            margin-bottom: 15px;
+            padding-bottom: 8px;
+            border-bottom: 2px solid #eee;
+            font-size: 0.95rem;
+        }
+        .control-group {
+            margin-bottom: 20px;
+        }
+        .control-group label {
+            display: block;
+            font-size: 0.85rem;
+            color: #555;
+            margin-bottom: 5px;
+        }
+        .control-group input[type="range"] {
+            width: 100%;
+            margin-bottom: 3px;
+        }
+        .control-group .value {
+            font-size: 0.8rem;
+            color: #888;
+            text-align: right;
+        }
+        .transport-mix {
+            background: #f8f9fa;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+        }
+        .transport-mix .mode {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+        .transport-mix .mode:last-child {
+            margin-bottom: 0;
+        }
+        .transport-mix .mode-label {
+            font-size: 0.85rem;
+        }
+        .transport-mix .mode-value {
+            font-weight: 600;
+            min-width: 45px;
+            text-align: right;
+        }
+        .dashboard {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+            padding: 25px;
+        }
+        .metrics-row {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+        .metric-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+        }
+        .metric-card.alt {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        }
+        .metric-card.green {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+        }
+        .metric-card.orange {
+            background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+        }
+        .metric-card .value {
+            font-size: 1.8rem;
+            font-weight: 700;
+        }
+        .metric-card .label {
+            font-size: 0.8rem;
+            opacity: 0.9;
+            margin-top: 3px;
+        }
+        .metric-card .sublabel {
+            font-size: 0.7rem;
+            opacity: 0.7;
+        }
+        .routing-tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        .routing-tab {
+            padding: 10px 20px;
+            border: none;
+            background: #eee;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.2s;
+        }
+        .routing-tab.active {
+            background: #667eea;
+            color: white;
+        }
+        .routing-tab:hover:not(.active) {
+            background: #ddd;
+        }
+        .charts-grid {
+            display: grid;
+            grid-template-columns: 1.2fr 0.8fr;
+            gap: 20px;
+            margin-bottom: 25px;
+        }
+        .chart-container {
+            background: #fafafa;
+            border-radius: 10px;
+            padding: 15px;
+        }
+        .chart-container h4 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 0.95rem;
+        }
+        .comparison-section {
+            margin-top: 30px;
+            padding-top: 25px;
+            border-top: 2px solid #eee;
+        }
+        .comparison-section h3 {
+            margin-bottom: 20px;
+            color: #333;
+        }
+        .comparison-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+        }
+        .stats-list {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 15px;
+        }
+        .stats-list h5 {
+            margin-bottom: 10px;
+            color: #555;
+        }
+        .stats-list ul {
+            list-style: none;
+            font-size: 0.85rem;
+            color: #666;
+        }
+        .stats-list li {
+            padding: 4px 0;
+        }
+        .info-section {
+            background: #f0f4ff;
+            padding: 20px;
+            border-radius: 10px;
+            margin-top: 25px;
+        }
+        .info-section h4 {
+            color: #444;
+            margin-bottom: 10px;
+        }
+        .info-section p, .info-section li {
+            font-size: 0.85rem;
+            color: #555;
+            line-height: 1.6;
+        }
+        .info-section ul {
+            margin-left: 20px;
+            margin-top: 10px;
+        }
+        footer {
+            text-align: center;
+            color: rgba(255,255,255,0.7);
+            padding: 30px 0 10px;
+            font-size: 0.85rem;
+        }
+        footer a {
+            color: rgba(255,255,255,0.9);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Smeed Urban Transport Model</h1>
+            <p>Based on R.J. Smeed's 1963 paper "The Road Space Required for Traffic in Towns".
+               This model calculates the space required for transport infrastructure in a city center.</p>
+        </header>
+
+        <div class="main-content">
+            <div class="sidebar">
+                <h3>City Size</h3>
+                <div class="control-group">
+                    <label>Working Population</label>
+                    <input type="range" id="population" min="5000" max="500000" step="5000" value="50000">
+                    <div class="value" id="population-val">50,000</div>
+                </div>
+                <div class="control-group">
+                    <label>Peak Period (hours)</label>
+                    <input type="range" id="peak-hours" min="1" max="4" step="0.5" value="2">
+                    <div class="value" id="peak-hours-val">2.0</div>
+                </div>
+
+                <h3>Transport Mix</h3>
+                <div class="control-group">
+                    <label>Car %</label>
+                    <input type="range" id="car-pct" min="0" max="100" step="5" value="50">
+                    <div class="value" id="car-pct-val">50%</div>
+                </div>
+                <div class="control-group">
+                    <label>Bus %</label>
+                    <input type="range" id="bus-pct" min="0" max="100" step="5" value="25">
+                    <div class="value" id="bus-pct-val">25%</div>
+                </div>
+                <div class="control-group">
+                    <label>Rail %</label>
+                    <input type="range" id="rail-pct" min="0" max="100" step="5" value="15">
+                    <div class="value" id="rail-pct-val">15%</div>
+                </div>
+                <div class="transport-mix">
+                    <div class="mode">
+                        <span class="mode-label">Walk:</span>
+                        <span class="mode-value" id="walk-pct-val">10%</span>
+                    </div>
+                </div>
+                <div class="control-group">
+                    <label>Car Occupancy</label>
+                    <input type="range" id="car-occupancy" min="1" max="4" step="0.1" value="1.5">
+                    <div class="value" id="car-occupancy-val">1.5</div>
+                </div>
+
+                <h3>Buildings</h3>
+                <div class="control-group">
+                    <label>Office Space (sq.ft/worker)</label>
+                    <input type="range" id="office-sqft" min="50" max="300" step="10" value="150">
+                    <div class="value" id="office-sqft-val">150</div>
+                </div>
+                <div class="control-group">
+                    <label>Building Height (floors)</label>
+                    <input type="range" id="building-floors" min="1" max="20" step="1" value="5">
+                    <div class="value" id="building-floors-val">5</div>
+                </div>
+
+                <h3>Parking</h3>
+                <div class="control-group">
+                    <label>Parking Structure Height</label>
+                    <input type="range" id="parking-floors" min="1" max="8" step="1" value="4">
+                    <div class="value" id="parking-floors-val">4 floors</div>
+                </div>
+
+                <h3>Costs</h3>
+                <div class="control-group">
+                    <label>Value of Time ($/hour)</label>
+                    <input type="range" id="value-of-time" min="5" max="100" step="5" value="25">
+                    <div class="value" id="value-of-time-val">$25</div>
+                </div>
+                <div class="control-group">
+                    <label>Land Cost ($/sq.ft)</label>
+                    <input type="range" id="land-cost" min="10" max="500" step="10" value="100">
+                    <div class="value" id="land-cost-val">$100</div>
+                </div>
+            </div>
+
+            <div class="dashboard">
+                <div class="routing-tabs">
+                    <button class="routing-tab active" data-routing="direct">Direct</button>
+                    <button class="routing-tab" data-routing="radial">Radial</button>
+                    <button class="routing-tab" data-routing="ring">Ring</button>
+                </div>
+
+                <div class="metrics-row">
+                    <div class="metric-card">
+                        <div class="value" id="metric-radius">--</div>
+                        <div class="label">Central Radius</div>
+                        <div class="sublabel" id="metric-radius-mi">-- mi</div>
+                    </div>
+                    <div class="metric-card alt">
+                        <div class="value" id="metric-transport">--</div>
+                        <div class="label">Transport Space</div>
+                        <div class="sublabel">% of area</div>
+                    </div>
+                    <div class="metric-card green">
+                        <div class="value" id="metric-commute">--</div>
+                        <div class="label">Avg Commute</div>
+                        <div class="sublabel">minutes</div>
+                    </div>
+                    <div class="metric-card orange">
+                        <div class="value" id="metric-cost">--</div>
+                        <div class="label">Annual Cost</div>
+                        <div class="sublabel">$ millions</div>
+                    </div>
+                </div>
+
+                <div class="charts-grid">
+                    <div class="chart-container">
+                        <h4>City Center Layout</h4>
+                        <div id="city-grid-chart"></div>
+                    </div>
+                    <div class="chart-container">
+                        <h4>Space Breakdown</h4>
+                        <div id="space-breakdown-chart"></div>
+                        <div class="stats-list">
+                            <h5>Infrastructure</h5>
+                            <ul id="infra-stats">
+                                <li>Loading...</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="comparison-section">
+                    <h3>Compare Routing Systems</h3>
+                    <div class="comparison-grid" id="comparison-grids"></div>
+                </div>
+
+                <div class="info-section">
+                    <h4>Model Notes</h4>
+                    <p><strong>Space Components:</strong></p>
+                    <ul>
+                        <li><strong>Workspace:</strong> Office buildings (ground footprint = office_sqft / floors)</li>
+                        <li><strong>Roads:</strong> Based on Smeed's formula for car + bus person-miles</li>
+                        <li><strong>Parking:</strong> One space per car commuter (adjusted for occupancy and structure height)</li>
+                        <li><strong>Rail:</strong> Track corridors (25ft wide) + stations (40,000 sq.ft each)</li>
+                    </ul>
+                    <p style="margin-top: 15px;"><strong>Key insight:</strong> More cars → more roads + parking → larger city center</p>
+                    <p style="margin-top: 10px;"><em>Reference: R.J. Smeed, "The Road Space Required for Traffic in Towns",
+                       Town Planning Review, Vol. 33, No. 4, January 1963.</em></p>
+                </div>
+            </div>
+        </div>
+
+        <footer>
+            <p>Smeed Transport Model | <a href="https://about.bensouthwood.co.uk">Ben Southwood</a></p>
+        </footer>
+    </div>
+
+    <script>
+    // ============ SMEED MODEL CALCULATIONS ============
+
+    const ROUTING_DISTANCE = {
+        direct: 1.13,
+        radial: 1.67,
+        ring: 1.90
+    };
+
+    const ROUTING_CENTRAL_DISTANCE = {
+        direct: 1.13,
+        radial: 1.67,
+        ring: 0.33
+    };
+
+    // Smeed's area per person-mile (sq.ft)
+    const AREA_PER_MILE = {
+        car: 65,    // Average of 40-100 range
+        bus: 6,     // Average of 4-10 range
+        rail: 2,    // Minimal road impact
+        walk: 0.5   // Pedestrian space
+    };
+
+    // Land use colors
+    const COLORS = {
+        office: '#4A90D9',
+        road: '#505050',
+        parking: '#F5A623',
+        rail: '#D0021B',
+        station: '#8B008B',
+        pavement: '#C4A77D',
+        park: '#228B22'
+    };
+
+    function calculateMetrics(params, routing) {
+        const {
+            population, peakHours, carPct, busPct, railPct, walkPct,
+            carOccupancy, officeSqft, buildingFloors, parkingFloors,
+            valueOfTime, landCost
+        } = params;
+
+        // Convert percentages
+        const carShare = carPct / 100;
+        const busShare = busPct / 100;
+        const railShare = railPct / 100;
+        const walkShare = walkPct / 100;
+
+        // Step 1: Workspace
+        const workspaceArea = population * officeSqft / buildingFloors;
+        const publicSpaceArea = workspaceArea * 0.1;
+
+        // Initial radius estimate
+        let radius = Math.sqrt((workspaceArea + publicSpaceArea) / Math.PI) / 5280;
+
+        // Iterative solve (space depends on radius, radius depends on space)
+        for (let i = 0; i < 10; i++) {
+            const centralDist = ROUTING_CENTRAL_DISTANCE[routing] * radius;
+
+            // Step 2: Road space
+            const carMiles = population * carShare * centralDist / carOccupancy;
+            const busMiles = population * busShare * centralDist;
+            const roadArea = (carMiles * AREA_PER_MILE.car + busMiles * AREA_PER_MILE.bus) / peakHours;
+
+            // Pavement alongside roads
+            const pavementArea = roadArea * 0.25;
+
+            // Step 3: Parking
+            const numCars = population * carShare / carOccupancy;
+            const parkingArea = numCars * 180 / parkingFloors;
+
+            // Step 4: Rail infrastructure
+            const railPassengers = population * railShare;
+            let railTrackArea = 0;
+            let railStationArea = 0;
+            let numStations = 0;
+
+            if (railShare > 0.01) {
+                const numLines = Math.max(1, Math.ceil(railPassengers / 20000));
+                const trackMiles = numLines * radius * 2;
+                railTrackArea = trackMiles * 5280 * 25;  // 25ft wide corridor
+
+                numStations = Math.max(1, Math.ceil(trackMiles / 0.5));
+                railStationArea = numStations * 40000;
+            }
+
+            // Total area
+            const totalArea = workspaceArea + publicSpaceArea + roadArea +
+                            pavementArea + parkingArea + railTrackArea + railStationArea;
+
+            const newRadius = Math.sqrt(totalArea / Math.PI) / 5280;
+
+            if (Math.abs(newRadius - radius) < 0.001) break;
+            radius = newRadius;
+        }
+
+        // Final calculations with converged radius
+        const centralDist = ROUTING_CENTRAL_DISTANCE[routing] * radius;
+        const totalDist = ROUTING_DISTANCE[routing] * radius;
+
+        const carMiles = population * carShare * centralDist / carOccupancy;
+        const busMiles = population * busShare * centralDist;
+        const roadArea = (carMiles * AREA_PER_MILE.car + busMiles * AREA_PER_MILE.bus) / peakHours;
+        const pavementArea = roadArea * 0.25;
+
+        const numCars = population * carShare / carOccupancy;
+        const parkingArea = numCars * 180 / parkingFloors;
+
+        const railPassengers = population * railShare;
+        let railTrackArea = 0, railStationArea = 0, numStations = 0, railMiles = 0;
+        if (railShare > 0.01) {
+            const numLines = Math.max(1, Math.ceil(railPassengers / 20000));
+            railMiles = numLines * radius * 2;
+            railTrackArea = railMiles * 5280 * 25;
+            numStations = Math.max(1, Math.ceil(railMiles / 0.5));
+            railStationArea = numStations * 40000;
+        }
+
+        const totalArea = workspaceArea + publicSpaceArea + roadArea +
+                        pavementArea + parkingArea + railTrackArea + railStationArea;
+
+        // Travel time
+        const avgSpeed = 20; // mph in central area
+        const carHours = population * carShare * totalDist / avgSpeed;
+        const busHours = population * busShare * totalDist / 12;
+        const railHours = population * railShare * totalDist / 25;
+        const walkHours = population * walkShare * totalDist / 3;
+        const totalHours = carHours + busHours + railHours + walkHours;
+        const avgCommute = (totalHours / population) * 60;
+
+        // Costs
+        const roadCost = roadArea * 60;
+        const parkingCost = numCars * (parkingFloors > 1 ? 25000 : 5000);
+        const railCost = railMiles * 100000000 + numStations * 50000000;
+        const landAcquisitionCost = totalArea * landCost;
+        const infraCost = roadCost + parkingCost + railCost + landAcquisitionCost;
+
+        const workingDays = 250;
+        const timeCostAnnual = totalHours * 2 * workingDays * valueOfTime;
+        const annualCost = infraCost / 30 + timeCostAnnual;
+
+        const transportArea = roadArea + pavementArea + parkingArea + railTrackArea + railStationArea;
+
+        return {
+            radius,
+            radiusFt: radius * 5280,
+            totalArea,
+            transportPct: transportArea / totalArea * 100,
+            avgCommute,
+            annualCostM: annualCost / 1e6,
+            space: {
+                workspace: workspaceArea,
+                publicSpace: publicSpaceArea,
+                roads: roadArea,
+                pavement: pavementArea,
+                parking: parkingArea,
+                railTracks: railTrackArea,
+                railStations: railStationArea
+            },
+            infra: {
+                parkingSpaces: Math.round(numCars),
+                roadMiles: roadArea / (35 * 5280),
+                railStations: numStations,
+                railMiles: railMiles
+            }
+        };
+    }
+
+    function generateCityGrid(space, routing, gridSize = 24) {
+        const total = Object.values(space).reduce((a, b) => a + b, 0);
+        const grid = Array(gridSize).fill(null).map(() => Array(gridSize).fill('office'));
+
+        const roadPct = (space.roads + space.pavement) / total;
+        const parkingPct = space.parking / total;
+        const railPct = (space.railTracks + space.railStations) / total;
+        const publicPct = space.publicSpace / total;
+
+        // Road spacing based on road proportion
+        let roadSpacing;
+        if (roadPct < 0.05) roadSpacing = 8;
+        else if (roadPct < 0.10) roadSpacing = 6;
+        else if (roadPct < 0.15) roadSpacing = 5;
+        else if (roadPct < 0.20) roadSpacing = 4;
+        else roadSpacing = 3;
+
+        const center = Math.floor(gridSize / 2);
+
+        // Roads grid
+        const roadRows = new Set();
+        const roadCols = new Set();
+        for (let i = 0; i < gridSize; i += roadSpacing) {
+            roadRows.add(i);
+            roadCols.add(i);
+        }
+        roadRows.add(center);
+        roadCols.add(center);
+
+        for (let r = 0; r < gridSize; r++) {
+            for (let c = 0; c < gridSize; c++) {
+                if (roadRows.has(r) || roadCols.has(c)) {
+                    grid[r][c] = 'road';
+                }
+            }
+        }
+
+        // Rail
+        if (railPct > 0.01) {
+            if (routing === 'ring') {
+                const ringRadius = Math.floor(gridSize / 3);
+                for (let r = 0; r < gridSize; r++) {
+                    for (let c = 0; c < gridSize; c++) {
+                        const dist = Math.sqrt((r - center) ** 2 + (c - center) ** 2);
+                        if (Math.abs(dist - ringRadius) < 1.5) {
+                            grid[r][c] = 'rail';
+                        }
+                    }
+                }
+            } else {
+                for (let c = 0; c < gridSize; c++) grid[center][c] = 'rail';
+                for (let r = 0; r < gridSize; r++) grid[r][center] = 'rail';
+            }
+            grid[center][center] = 'station';
+        }
+
+        // Parking near intersections
+        const parkingTarget = Math.floor(gridSize * gridSize * parkingPct);
+        let parkingPlaced = 0;
+        const intersections = [];
+        roadRows.forEach(r => {
+            roadCols.forEach(c => {
+                if (r !== c) intersections.push([r, c]);
+            });
+        });
+        intersections.sort((a, b) => {
+            const distA = Math.sqrt((a[0] - center) ** 2 + (a[1] - center) ** 2);
+            const distB = Math.sqrt((b[0] - center) ** 2 + (b[1] - center) ** 2);
+            return distB - distA;
+        });
+
+        for (const [ir, ic] of intersections) {
+            if (parkingPlaced >= parkingTarget) break;
+            for (const [dr, dc] of [[1, 1], [1, -1], [-1, 1], [-1, -1]]) {
+                const pr = ir + dr, pc = ic + dc;
+                if (pr >= 0 && pr < gridSize && pc >= 0 && pc < gridSize) {
+                    if (grid[pr][pc] === 'office') {
+                        grid[pr][pc] = 'parking';
+                        parkingPlaced++;
+                        if (parkingPlaced >= parkingTarget) break;
+                    }
+                }
+            }
+        }
+
+        // Park
+        const publicTarget = Math.floor(gridSize * gridSize * publicPct);
+        let publicPlaced = 0;
+        const parkR = center + Math.floor(roadSpacing / 2) + 1;
+        const parkC = center - Math.floor(roadSpacing / 2) - 1;
+        for (let dr = -2; dr <= 2 && publicPlaced < publicTarget; dr++) {
+            for (let dc = -2; dc <= 2 && publicPlaced < publicTarget; dc++) {
+                const pr = parkR + dr, pc = parkC + dc;
+                if (pr >= 0 && pr < gridSize && pc >= 0 && pc < gridSize) {
+                    if (grid[pr][pc] === 'office') {
+                        grid[pr][pc] = 'park';
+                        publicPlaced++;
+                    }
+                }
+            }
+        }
+
+        return grid;
+    }
+
+    function gridToPlotly(grid, containerId, title = null) {
+        const gridSize = grid.length;
+        const colorMap = {
+            'office': 0, 'road': 1, 'parking': 2, 'rail': 3, 'station': 4, 'pavement': 5, 'park': 6
+        };
+        const colorScale = [
+            [0, COLORS.office], [0.143, COLORS.office],
+            [0.143, COLORS.road], [0.286, COLORS.road],
+            [0.286, COLORS.parking], [0.429, COLORS.parking],
+            [0.429, COLORS.rail], [0.571, COLORS.rail],
+            [0.571, COLORS.station], [0.714, COLORS.station],
+            [0.714, COLORS.pavement], [0.857, COLORS.pavement],
+            [0.857, COLORS.park], [1, COLORS.park]
+        ];
+
+        const z = grid.map(row => row.map(cell => colorMap[cell] || 0));
+        const hoverText = grid.map(row => row.map(cell => cell.charAt(0).toUpperCase() + cell.slice(1)));
+
+        const trace = {
+            z: z,
+            type: 'heatmap',
+            colorscale: colorScale,
+            showscale: false,
+            hoverinfo: 'text',
+            text: hoverText,
+            xgap: 1,
+            ygap: 1,
+            zmin: 0,
+            zmax: 7
+        };
+
+        const layout = {
+            title: title,
+            xaxis: { showticklabels: false, showgrid: false, zeroline: false, scaleanchor: 'y' },
+            yaxis: { showticklabels: false, showgrid: false, zeroline: false, autorange: 'reversed' },
+            margin: { l: 10, r: 10, t: title ? 40 : 10, b: 10 },
+            height: containerId === 'city-grid-chart' ? 400 : 200
+        };
+
+        Plotly.newPlot(containerId, [trace], layout, { responsive: true });
+    }
+
+    function updateSpaceBreakdown(space) {
+        const total = Object.values(space).reduce((a, b) => a + b, 0);
+        const categories = {
+            'Office': space.workspace,
+            'Roads': space.roads + space.pavement,
+            'Parking': space.parking,
+            'Rail': space.railTracks + space.railStations,
+            'Parks': space.publicSpace
+        };
+
+        const labels = Object.keys(categories).filter(k => categories[k] > total * 0.005);
+        const values = labels.map(k => categories[k] / total * 100);
+        const colors = {
+            'Office': COLORS.office,
+            'Roads': COLORS.road,
+            'Parking': COLORS.parking,
+            'Rail': COLORS.rail,
+            'Parks': COLORS.park
+        };
+
+        const trace = {
+            x: labels,
+            y: values,
+            type: 'bar',
+            marker: { color: labels.map(l => colors[l]) },
+            text: values.map(v => v.toFixed(1) + '%'),
+            textposition: 'outside'
+        };
+
+        const layout = {
+            yaxis: { title: '% of Area' },
+            margin: { l: 40, r: 10, t: 10, b: 40 },
+            height: 200
+        };
+
+        Plotly.newPlot('space-breakdown-chart', [trace], layout, { responsive: true });
+    }
+
+    // ============ UI HANDLING ============
+
+    let currentRouting = 'direct';
+
+    function getParams() {
+        const carPct = parseInt(document.getElementById('car-pct').value);
+        const busPct = parseInt(document.getElementById('bus-pct').value);
+        const railPct = parseInt(document.getElementById('rail-pct').value);
+
+        // Clamp values
+        const maxBus = 100 - carPct;
+        const actualBus = Math.min(busPct, maxBus);
+        const maxRail = 100 - carPct - actualBus;
+        const actualRail = Math.min(railPct, maxRail);
+        const walkPct = 100 - carPct - actualBus - actualRail;
+
+        return {
+            population: parseInt(document.getElementById('population').value),
+            peakHours: parseFloat(document.getElementById('peak-hours').value),
+            carPct: carPct,
+            busPct: actualBus,
+            railPct: actualRail,
+            walkPct: walkPct,
+            carOccupancy: parseFloat(document.getElementById('car-occupancy').value),
+            officeSqft: parseInt(document.getElementById('office-sqft').value),
+            buildingFloors: parseInt(document.getElementById('building-floors').value),
+            parkingFloors: parseInt(document.getElementById('parking-floors').value),
+            valueOfTime: parseInt(document.getElementById('value-of-time').value),
+            landCost: parseInt(document.getElementById('land-cost').value)
+        };
+    }
+
+    function updateDisplay() {
+        const params = getParams();
+
+        // Update slider displays
+        document.getElementById('population-val').textContent = params.population.toLocaleString();
+        document.getElementById('peak-hours-val').textContent = params.peakHours.toFixed(1);
+        document.getElementById('car-pct-val').textContent = params.carPct + '%';
+        document.getElementById('bus-pct-val').textContent = params.busPct + '%';
+        document.getElementById('rail-pct-val').textContent = params.railPct + '%';
+        document.getElementById('walk-pct-val').textContent = params.walkPct + '%';
+        document.getElementById('car-occupancy-val').textContent = params.carOccupancy.toFixed(1);
+        document.getElementById('office-sqft-val').textContent = params.officeSqft;
+        document.getElementById('building-floors-val').textContent = params.buildingFloors;
+        document.getElementById('parking-floors-val').textContent = params.parkingFloors + ' floors';
+        document.getElementById('value-of-time-val').textContent = '$' + params.valueOfTime;
+        document.getElementById('land-cost-val').textContent = '$' + params.landCost;
+
+        // Update bus/rail sliders max values
+        document.getElementById('bus-pct').max = 100 - params.carPct;
+        document.getElementById('rail-pct').max = 100 - params.carPct - params.busPct;
+
+        // Calculate metrics for current routing
+        const metrics = calculateMetrics(params, currentRouting);
+
+        // Update metric cards
+        document.getElementById('metric-radius').textContent = Math.round(metrics.radiusFt).toLocaleString() + ' ft';
+        document.getElementById('metric-radius-mi').textContent = metrics.radius.toFixed(3) + ' mi';
+        document.getElementById('metric-transport').textContent = metrics.transportPct.toFixed(1) + '%';
+        document.getElementById('metric-commute').textContent = metrics.avgCommute.toFixed(1);
+        document.getElementById('metric-cost').textContent = '$' + metrics.annualCostM.toFixed(1) + 'M';
+
+        // Update city grid
+        const grid = generateCityGrid(metrics.space, currentRouting, 24);
+        gridToPlotly(grid, 'city-grid-chart');
+
+        // Update space breakdown
+        updateSpaceBreakdown(metrics.space);
+
+        // Update infrastructure stats
+        const infraHtml = `
+            <li>Parking spaces: ${metrics.infra.parkingSpaces.toLocaleString()}</li>
+            <li>Road miles: ${metrics.infra.roadMiles.toFixed(2)}</li>
+            ${metrics.infra.railStations > 0 ? `<li>Rail stations: ${metrics.infra.railStations}</li>` : ''}
+            ${metrics.infra.railMiles > 0 ? `<li>Rail miles: ${metrics.infra.railMiles.toFixed(2)}</li>` : ''}
+        `;
+        document.getElementById('infra-stats').innerHTML = infraHtml;
+
+        // Update comparison grids
+        const compContainer = document.getElementById('comparison-grids');
+        compContainer.innerHTML = '';
+
+        for (const routing of ['direct', 'radial', 'ring']) {
+            const m = calculateMetrics(params, routing);
+            const g = generateCityGrid(m.space, routing, 16);
+
+            const div = document.createElement('div');
+            div.className = 'chart-container';
+            div.innerHTML = `<h4>${routing.charAt(0).toUpperCase() + routing.slice(1)} (${Math.round(m.radiusFt).toLocaleString()} ft)</h4><div id="comp-${routing}"></div>`;
+            compContainer.appendChild(div);
+
+            setTimeout(() => gridToPlotly(g, `comp-${routing}`), 0);
+        }
+    }
+
+    // Event listeners
+    document.querySelectorAll('input[type="range"]').forEach(input => {
+        input.addEventListener('input', updateDisplay);
+    });
+
+    document.querySelectorAll('.routing-tab').forEach(tab => {
+        tab.addEventListener('click', function() {
+            document.querySelectorAll('.routing-tab').forEach(t => t.classList.remove('active'));
+            this.classList.add('active');
+            currentRouting = this.dataset.routing;
+            updateDisplay();
+        });
+    });
+
+    // Initial render
+    updateDisplay();
+    </script>
+</body>
+</html>
